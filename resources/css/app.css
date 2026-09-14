@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import 'tailwindcss';
+
+@source '../views';
+@source '../js';
+
+@theme {
+    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Poppins', sans-serif;
+
+    --color-teal-50: #f0f7fd;
+    --color-teal-100: #d9eefb;
+    --color-teal-200: #b9e0f7;
+    --color-teal-300: #84caf2;
+    --color-teal-400: #47adea;
+    --color-teal-500: #1b92dd;
+    --color-teal-600: #007DCC;
+    --color-teal-650: #007DCC;
+    --color-teal-700: #0064a6;
+    --color-teal-750: #0064a6;
+    --color-teal-800: #045488;
+    --color-teal-850: #045488;
+    --color-teal-900: #0a4670;
+    --color-teal-950: #062c4a;
+
+    --color-primary-50: #f0f7fd;
+    --color-primary-100: #d9eefb;
+    --color-primary-200: #b9e0f7;
+    --color-primary-300: #84caf2;
+    --color-primary-400: #47adea;
+    --color-primary-500: #1b92dd;
+    --color-primary-600: #007DCC;
+    --color-primary-700: #0064a6;
+    --color-primary-800: #045488;
+    --color-primary-900: #0a4670;
+    --color-primary-950: #062c4a;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+select,
+textarea {
+    border-color: #e2e8f0; /* slate-200 */
+    background-color: #f8fafc; /* slate-50 */
+    border-radius: 0.75rem; /* rounded-xl */
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="date"]:focus,
+select:focus,
+textarea:focus {
+    border-color: #007DCC;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+/* Hide scrollbars across all browsers */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
