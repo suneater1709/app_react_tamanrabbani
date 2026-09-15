@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, ArrowRight, ChevronRight, BookOpen } from 'lucide-react';
@@ -19,12 +19,24 @@ export default function Programs() {
     const location = useLocation();
     const navigate = useNavigate();
     const [selectedProgramId, setSelectedProgramId] = useState<string | null>('pg');
+    const detailRef = useRef<HTMLDivElement>(null);
 
-    // Pre-select program from home navigation if exists
+    // Auto-scroll handler to class detail section
+    const handleSelectProgram = (progId: string) => {
+        setSelectedProgramId(progId);
+        setTimeout(() => {
+            detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
+
+    // Pre-select program from home navigation if exists & auto-scroll
     useEffect(() => {
         const stateSelectedId = location.state?.selectedId;
         if (stateSelectedId) {
             setSelectedProgramId(stateSelectedId);
+            setTimeout(() => {
+                detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 200);
         }
     }, [location.state]);
 
@@ -44,11 +56,11 @@ export default function Programs() {
                 'Bernyanyi lagu edukasi & motorik halus'
             ],
             fasilitas: [
-                'Ruang kelas ber-AC yang aman dan bersih',
-                'Playground indoor & outdoor yang ramah anak',
+                'Playground outdoor yang ramah anak',
                 'Berbagai macam Alat Permainan Edukatif (APE)',
                 'Pemeriksaan tumbuh kembang berkala',
-                'Laporan portofolio perkembangan anak bulanan'
+                'Laporan portofolio perkembangan anak bulanan',
+                'Lingkungan belajar yang bersih, asri, dan aman'
             ],
             kelebihan: [
                 'Rasio guru dan murid sangat ideal (1 guru mendampingi maksimal 6-7 anak)',
@@ -71,7 +83,7 @@ export default function Programs() {
                 'Kreativitas seni, mewarnai, dan kerajinan tangan'
             ],
             fasilitas: [
-                'Kelas AC multimedia interaktif',
+                'Kelas multimedia interaktif yang nyaman & edukatif',
                 'Perpustakaan mini berisi buku ramah anak',
                 'Peralatan olahraga dan stimulasi motorik kasar',
                 'Pemeriksaan kesehatan fisik & gigi berkala',
@@ -98,7 +110,7 @@ export default function Programs() {
                 'Pengenalan kosakata Bahasa Arab dan Inggris praktis'
             ],
             fasilitas: [
-                'Fasilitas kelas modern ber-AC lengkap',
+                'Fasilitas kelas modern & interaktif yang nyaman',
                 'Mini laboratory untuk eksperimen sains cilik',
                 'Lapangan olahraga luas dan sarana manasik',
                 'Konsultasi psikologi kesiapan masuk SD',
@@ -129,7 +141,7 @@ export default function Programs() {
                     </p>
                 </div>
 
-                {/* Cards Grid (Gambar 3 Layout) */}
+                {/* Cards Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {programsData.map((prog) => {
                         const isSelected = selectedProgramId === prog.id;
@@ -137,7 +149,7 @@ export default function Programs() {
                             <motion.div
                                 key={prog.id}
                                 whileHover={{ y: -8, scale: 1.02 }}
-                                onClick={() => setSelectedProgramId(prog.id)}
+                                onClick={() => handleSelectProgram(prog.id)}
                                 className={`bg-white rounded-3xl p-6 flex flex-col justify-between shadow-md hover:shadow-lg cursor-pointer transition-all duration-300 relative overflow-hidden ${
                                     isSelected ? 'ring-2 ring-teal-500' : 'border-none'
                                 }`}
@@ -166,7 +178,14 @@ export default function Programs() {
                                 </div>
 
                                 <div className="border-t border-slate-100 mt-6 pt-4 flex justify-end items-center">
-                                    <button className="text-xxs font-bold text-teal-650 hover:text-teal-700 flex items-center gap-1">
+                                    <button 
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSelectProgram(prog.id);
+                                        }}
+                                        className="text-xxs font-bold text-teal-650 hover:text-teal-700 flex items-center gap-1 cursor-pointer"
+                                    >
                                         <span>Lihat Detail Kelas</span>
                                         <ChevronRight size={14} />
                                     </button>
@@ -176,78 +195,81 @@ export default function Programs() {
                     })}
                 </div>
 
-                {/* Class details panel (Gambar 4 Layout) */}
-                <AnimatePresence mode="wait">
-                    {selectedProgramId && (
-                        <motion.div
-                            key={selectedProgramId}
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
-                            className="mt-12 bg-white rounded-3xl p-6 sm:p-10 shadow-lg"
-                        >
-                            <div className="border-l-4 border-teal-500 pl-4 mb-8">
-                                <div className="flex flex-wrap gap-2 mb-2">
-                                    <span className="px-3 py-1 bg-teal-50 text-teal-800 text-xxs font-bold rounded-full">Target Usia: {currentProgram.age}</span>
-                                    <span className="px-3 py-1 bg-blue-50 text-blue-800 text-xxs font-bold rounded-full">Jam: {currentProgram.schedule}</span>
-                                </div>
-                                <h3 className="text-xl sm:text-2xl font-bold text-slate-800">{currentProgram.name}</h3>
-                                <p className="text-slate-500 text-xs sm:text-sm mt-3 leading-relaxed max-w-4xl">{currentProgram.description}</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                                {/* Checklist */}
-                                <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Materi Pokok Pembelajaran:</h4>
-                                        <ul className="space-y-2 text-xs text-slate-600">
-                                            {currentProgram.materi.map((item, idx) => (
-                                                <li key={idx} className="flex items-start gap-2">
-                                                    <span className="text-teal-500 mt-0.5">•</span>
-                                                    <span>{item}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
+                {/* Class details panel with scroll anchor */}
+                <div ref={detailRef} id="detail-penjelasan-kelas" className="scroll-mt-24">
+                    <AnimatePresence mode="wait">
+                        {selectedProgramId && (
+                            <motion.div
+                                key={selectedProgramId}
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 20 }}
+                                className="mt-12 bg-white rounded-3xl p-6 sm:p-10 shadow-lg"
+                            >
+                                <div className="border-l-4 border-teal-500 pl-4 mb-8">
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        <span className="px-3 py-1 bg-teal-50 text-teal-800 text-xxs font-bold rounded-full">Target Usia: {currentProgram.age}</span>
+                                        <span className="px-3 py-1 bg-blue-50 text-blue-800 text-xxs font-bold rounded-full">Jam: {currentProgram.schedule}</span>
                                     </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Fasilitas Khusus Kelas:</h4>
-                                        <ul className="space-y-2 text-xs text-slate-600">
-                                            {currentProgram.fasilitas.map((item, idx) => (
-                                                <li key={idx} className="flex items-start gap-2">
-                                                    <span className="text-amber-500 mt-0.5">•</span>
-                                                    <span>{item}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
+                                    <h3 className="text-xl sm:text-2xl font-bold text-slate-800">{currentProgram.name}</h3>
+                                    <p className="text-slate-500 text-xs sm:text-sm mt-3 leading-relaxed max-w-4xl">{currentProgram.description}</p>
                                 </div>
 
-                                {/* Sidebar info card */}
-                                <div className="lg:col-span-4 bg-slate-50 p-6 rounded-2xl space-y-6">
-                                    <div className="space-y-3">
-                                        <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider block">Kelebihan Program:</span>
-                                        <ul className="space-y-2 text-xs text-slate-600">
-                                            {currentProgram.kelebihan.map((item, idx) => (
-                                                <li key={idx} className="flex items-start gap-2">
-                                                    <CheckCircle2 className="text-teal-500 mt-0.5 flex-shrink-0" size={14} />
-                                                    <span>{item}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                                    {/* Checklist */}
+                                    <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                        <div>
+                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Materi Pokok Pembelajaran:</h4>
+                                            <ul className="space-y-2 text-xs text-slate-600">
+                                                {currentProgram.materi.map((item, idx) => (
+                                                    <li key={idx} className="flex items-start gap-2">
+                                                        <span className="text-teal-500 mt-0.5">•</span>
+                                                        <span>{item}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Fasilitas Khusus Kelas:</h4>
+                                            <ul className="space-y-2 text-xs text-slate-600">
+                                                {currentProgram.fasilitas.map((item, idx) => (
+                                                    <li key={idx} className="flex items-start gap-2">
+                                                        <span className="text-amber-500 mt-0.5">•</span>
+                                                        <span>{item}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     </div>
 
-                                    <button
-                                        onClick={() => navigate('/ppdb')}
-                                        className="w-full py-3 bg-teal-650 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition-all shadow hover:shadow-md cursor-pointer flex items-center justify-center gap-1.5"
-                                    >
-                                        <span>Daftar Kelas Ini Sekarang</span>
-                                        <ArrowRight size={14} />
-                                    </button>
+                                    {/* Sidebar info card */}
+                                    <div className="lg:col-span-4 bg-slate-50 p-6 rounded-2xl space-y-6">
+                                        <div className="space-y-3">
+                                            <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider block">Kelebihan Program:</span>
+                                            <ul className="space-y-2 text-xs text-slate-600">
+                                                {currentProgram.kelebihan.map((item, idx) => (
+                                                    <li key={idx} className="flex items-start gap-2">
+                                                        <CheckCircle2 className="text-teal-500 mt-0.5 flex-shrink-0" size={14} />
+                                                        <span>{item}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/ppdb')}
+                                            className="w-full py-3 bg-teal-650 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition-all shadow hover:shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                                        >
+                                            <span>Daftar Kelas Ini Sekarang</span>
+                                            <ArrowRight size={14} />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
             </div>
         </div>
