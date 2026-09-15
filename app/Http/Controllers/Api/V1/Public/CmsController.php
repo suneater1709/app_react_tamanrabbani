@@ -10,7 +10,6 @@ use App\Repositories\Contracts\CmsRepositoryInterface;
 use App\Services\CmsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class CmsController extends Controller
 {
@@ -152,11 +151,20 @@ class CmsController extends Controller
             $waves = $defaultWaves;
         }
 
+        $logoUrl = null;
+        if ($logo) {
+            if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://') || str_starts_with($logo, '/')) {
+                $logoUrl = $logo;
+            } else {
+                $logoUrl = '/storage/'.ltrim($logo, '/');
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
-                'school_logo' => $logo ? Storage::url($logo) : null,
-                'logo_landing' => $logo ? Storage::url($logo) : null,
+                'school_logo' => $logoUrl,
+                'logo_landing' => $logoUrl,
                 'school_name' => $settings->get('school_name', 'KB-TK IT Taman Robbani Sidoarjo'),
                 'school_address' => $settings->get('school_address', 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo'),
                 'school_phone' => $settings->get('school_phone', '087752439572'),

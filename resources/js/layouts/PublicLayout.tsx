@@ -48,7 +48,14 @@ export default function PublicLayout() {
                         {/* Logo */}
                         <div className="flex-shrink-0 flex items-center gap-3">
                             {logoLanding ? (
-                                <img src={logoLanding} alt="Logo" className="h-10 object-contain" />
+                                <img 
+                                    src={logoLanding} 
+                                    alt="Logo" 
+                                    className="h-10 object-contain" 
+                                    onError={(e) => {
+                                        (e.target as HTMLElement).style.display = 'none';
+                                    }}
+                                />
                             ) : (
                                 <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-lg font-display">
                                     TR

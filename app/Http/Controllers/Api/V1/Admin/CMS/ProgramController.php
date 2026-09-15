@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Admin\CMS;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\Program;
 use App\Models\Admin\ActivityLog;
+use App\Models\Tenant\Program;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -17,9 +17,10 @@ class ProgramController extends Controller
     public function index(): JsonResponse
     {
         $programs = Program::orderBy('code', 'asc')->get();
+
         return response()->json([
             'success' => true,
-            'data' => $programs
+            'data' => $programs,
         ]);
     }
 
@@ -42,7 +43,7 @@ class ProgramController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -61,7 +62,7 @@ class ProgramController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Program baru berhasil ditambahkan.',
-            'data' => $program
+            'data' => $program,
         ], 201);
     }
 
@@ -72,16 +73,16 @@ class ProgramController extends Controller
     {
         $program = Program::find($id);
 
-        if (!$program) {
+        if (! $program) {
             return response()->json([
                 'success' => false,
-                'message' => 'Program tidak ditemukan.'
+                'message' => 'Program tidak ditemukan.',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $program
+            'data' => $program,
         ]);
     }
 
@@ -92,10 +93,10 @@ class ProgramController extends Controller
     {
         $program = Program::find($id);
 
-        if (!$program) {
+        if (! $program) {
             return response()->json([
                 'success' => false,
-                'message' => 'Program tidak ditemukan.'
+                'message' => 'Program tidak ditemukan.',
             ], 404);
         }
 
@@ -113,7 +114,7 @@ class ProgramController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -132,7 +133,7 @@ class ProgramController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Program berhasil diperbarui.',
-            'data' => $program
+            'data' => $program,
         ]);
     }
 
@@ -143,10 +144,10 @@ class ProgramController extends Controller
     {
         $program = Program::find($id);
 
-        if (!$program) {
+        if (! $program) {
             return response()->json([
                 'success' => false,
-                'message' => 'Program tidak ditemukan.'
+                'message' => 'Program tidak ditemukan.',
             ], 404);
         }
 
@@ -164,7 +165,7 @@ class ProgramController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Program berhasil dihapus.'
+            'message' => 'Program berhasil dihapus.',
         ]);
     }
 }

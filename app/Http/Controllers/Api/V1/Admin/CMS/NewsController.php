@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api\V1\Admin\CMS;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\News;
 use App\Models\Admin\ActivityLog;
+use App\Models\Tenant\News;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class NewsController extends Controller
 {
@@ -19,9 +19,10 @@ class NewsController extends Controller
     public function index(Request $request): JsonResponse
     {
         $news = News::orderBy('created_at', 'desc')->paginate($request->query('per_page', 10));
+
         return response()->json([
             'success' => true,
-            'data' => $news
+            'data' => $news,
         ]);
     }
 
@@ -47,16 +48,16 @@ class NewsController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $data = $request->only(['title', 'content', 'is_published', 'seo_title', 'seo_description']);
-        
+
         // Generate Unique Slug
         $slug = Str::slug($request->title);
         $count = News::where('slug', 'like', "{$slug}%")->count();
-        $data['slug'] = $count > 0 ? "{$slug}-" . ($count + 1) : $slug;
+        $data['slug'] = $count > 0 ? "{$slug}-".($count + 1) : $slug;
 
         // Handle Image Upload
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
@@ -80,7 +81,7 @@ class NewsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Berita baru berhasil ditambahkan.',
-            'data' => $news
+            'data' => $news,
         ], 201);
     }
 
@@ -91,16 +92,16 @@ class NewsController extends Controller
     {
         $news = News::find($id);
 
-        if (!$news) {
+        if (! $news) {
             return response()->json([
                 'success' => false,
-                'message' => 'Artikel tidak ditemukan.'
+                'message' => 'Artikel tidak ditemukan.',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $news
+            'data' => $news,
         ]);
     }
 
@@ -111,10 +112,10 @@ class NewsController extends Controller
     {
         $news = News::find($id);
 
-        if (!$news) {
+        if (! $news) {
             return response()->json([
                 'success' => false,
-                'message' => 'Artikel tidak ditemukan.'
+                'message' => 'Artikel tidak ditemukan.',
             ], 404);
         }
 
@@ -133,7 +134,7 @@ class NewsController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -143,7 +144,7 @@ class NewsController extends Controller
         if ($news->title !== $request->title) {
             $slug = Str::slug($request->title);
             $count = News::where('slug', 'like', "{$slug}%")->where('id', '!=', $id)->count();
-            $data['slug'] = $count > 0 ? "{$slug}-" . ($count + 1) : $slug;
+            $data['slug'] = $count > 0 ? "{$slug}-".($count + 1) : $slug;
         }
 
         // Handle Image Upload
@@ -171,7 +172,7 @@ class NewsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Berita berhasil diperbarui.',
-            'data' => $news
+            'data' => $news,
         ]);
     }
 
@@ -182,10 +183,10 @@ class NewsController extends Controller
     {
         $news = News::find($id);
 
-        if (!$news) {
+        if (! $news) {
             return response()->json([
                 'success' => false,
-                'message' => 'Artikel tidak ditemukan.'
+                'message' => 'Artikel tidak ditemukan.',
             ], 404);
         }
 
@@ -208,7 +209,7 @@ class NewsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Artikel berita berhasil dihapus.'
+            'message' => 'Artikel berita berhasil dihapus.',
         ]);
     }
 }

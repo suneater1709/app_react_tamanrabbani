@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Role extends Model
 {
     protected $connection = 'mysql_admin';
+
     protected $table = 'roles';
 
     protected $fillable = [

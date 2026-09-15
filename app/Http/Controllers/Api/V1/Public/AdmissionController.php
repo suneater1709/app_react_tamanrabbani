@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\V1\Public;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAdmissionRequest;
-use App\Services\AdmissionService;
 use App\Repositories\Contracts\PendaftarRepositoryInterface;
+use App\Services\AdmissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 class AdmissionController extends Controller
 {
     protected AdmissionService $admissionService;
+
     protected PendaftarRepositoryInterface $pendaftarRepo;
 
     public function __construct(AdmissionService $admissionService, PendaftarRepositoryInterface $pendaftarRepo)
@@ -27,7 +28,7 @@ class AdmissionController extends Controller
     public function store(StoreAdmissionRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        
+
         // Extract files
         $files = [];
         if ($request->hasFile('birth_certificate')) {
@@ -53,8 +54,8 @@ class AdmissionController extends Controller
                 'registration_number' => $pendaftar->registration_number,
                 'full_name' => $pendaftar->full_name,
                 'status' => $pendaftar->status,
-                'uuid' => $pendaftar->uuid
-            ]
+                'uuid' => $pendaftar->uuid,
+            ],
         ], 201);
     }
 
@@ -69,34 +70,32 @@ class AdmissionController extends Controller
         if (empty($regNumber)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Nomor registrasi wajib diisi.'
+                'message' => 'Nomor registrasi wajib diisi.',
             ], 422);
         }
 
         $pendaftar = $this->pendaftarRepo->findByRegistrationNumber($regNumber);
 
-        if (!$pendaftar) {
+        if (! $pendaftar) {
             return response()->json([
                 'success' => false,
-                'message' => 'Nomor registrasi tidak ditemukan.'
+                'message' => 'Nomor registrasi tidak ditemukan.',
             ], 404);
         }
 
         // Case-insensitive verification check on the child's name if provided
-        if (!empty($studentName)) {
+        if (! empty($studentName)) {
             $matchName = Str::lower($studentName);
             $dbName = Str::lower($pendaftar->full_name);
             $dbNickname = Str::lower($pendaftar->nickname);
 
-            if (!Str::contains($dbName, $matchName) && !Str::contains($dbNickname, $matchName)) {
+            if (! Str::contains($dbName, $matchName) && ! Str::contains($dbNickname, $matchName)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Data nomor registrasi dan nama anak tidak cocok.'
+                    'message' => 'Data nomor registrasi dan nama anak tidak cocok.',
                 ], 404);
             }
         }
-
-
 
         return response()->json([
             'success' => true,
@@ -112,10 +111,10 @@ class AdmissionController extends Controller
                     return [
                         'status' => $log->new_status,
                         'notes' => $log->notes,
-                        'changed_at' => $log->created_at->toISOString()
+                        'changed_at' => $log->created_at->toISOString(),
                     ];
-                })->sortByDesc('changed_at')->values()->all()
-            ]
+                })->sortByDesc('changed_at')->values()->all(),
+            ],
         ]);
     }
 
@@ -126,10 +125,10 @@ class AdmissionController extends Controller
     {
         $pendaftar = $this->pendaftarRepo->findByRegistrationNumber($regNumber);
 
-        if (!$pendaftar || $pendaftar->status !== 'revision') {
+        if (! $pendaftar || $pendaftar->status !== 'revision') {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan atau tidak dalam status revisi.'
+                'message' => 'Data tidak ditemukan atau tidak dalam status revisi.',
             ], 404);
         }
 
@@ -137,7 +136,7 @@ class AdmissionController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $pendaftar
+            'data' => $pendaftar,
         ]);
     }
 
@@ -148,15 +147,15 @@ class AdmissionController extends Controller
     {
         $pendaftar = $this->pendaftarRepo->findByRegistrationNumber($regNumber);
 
-        if (!$pendaftar || $pendaftar->status !== 'revision') {
+        if (! $pendaftar || $pendaftar->status !== 'revision') {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan atau tidak dalam status revisi.'
+                'message' => 'Data tidak ditemukan atau tidak dalam status revisi.',
             ], 404);
         }
 
         $validated = $request->validated();
-        
+
         // Extract files
         $files = [];
         if ($request->hasFile('birth_certificate')) {
@@ -180,7 +179,7 @@ class AdmissionController extends Controller
             'data' => [
                 'registration_number' => $pendaftar->registration_number,
                 'status' => $pendaftar->status,
-            ]
+            ],
         ]);
     }
 }

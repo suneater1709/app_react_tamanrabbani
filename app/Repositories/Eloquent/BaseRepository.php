@@ -37,12 +37,14 @@ abstract class BaseRepository
     {
         $record = $this->findOrFail($id);
         $record->update($attributes);
+
         return $record;
     }
 
     public function delete($id)
     {
         $record = $this->findOrFail($id);
+
         return $record->delete();
     }
 }

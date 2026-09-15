@@ -2,13 +2,13 @@
 
 namespace App\Repositories\Eloquent;
 
-use App\Models\Tenant\Slider;
-use App\Models\Tenant\SchoolProfile;
-use App\Models\Tenant\Faq;
 use App\Models\Tenant\Announcement;
-use App\Models\Tenant\News;
-use App\Models\Tenant\Gallery;
 use App\Models\Tenant\Contact;
+use App\Models\Tenant\Faq;
+use App\Models\Tenant\Gallery;
+use App\Models\Tenant\News;
+use App\Models\Tenant\SchoolProfile;
+use App\Models\Tenant\Slider;
 use App\Repositories\Contracts\CmsRepositoryInterface;
 
 class CmsRepository implements CmsRepositoryInterface
@@ -21,6 +21,7 @@ class CmsRepository implements CmsRepositoryInterface
     public function getSchoolProfile(string $key)
     {
         $profile = SchoolProfile::where('key', $key)->first();
+
         return $profile ? $profile->value : null;
     }
 
@@ -35,6 +36,7 @@ class CmsRepository implements CmsRepositoryInterface
         if ($onlyActive) {
             $query->where('is_active', true);
         }
+
         return $query->orderBy('created_at', 'desc')->get();
     }
 
@@ -44,6 +46,7 @@ class CmsRepository implements CmsRepositoryInterface
         if ($onlyActive) {
             $query->where('is_active', true);
         }
+
         return $query->orderBy('publish_date', 'desc')->get();
     }
 
@@ -53,6 +56,7 @@ class CmsRepository implements CmsRepositoryInterface
         if ($onlyPublished) {
             $query->where('is_published', true);
         }
+
         return $query->orderBy('created_at', 'desc')->paginate($perPage);
     }
 
@@ -64,9 +68,10 @@ class CmsRepository implements CmsRepositoryInterface
     public function getGallery(string $category = 'all')
     {
         $query = Gallery::query();
-        if ($category !== 'all' && !empty($category)) {
+        if ($category !== 'all' && ! empty($category)) {
             $query->where('category', $category);
         }
+
         return $query->orderBy('created_at', 'desc')->get();
     }
 

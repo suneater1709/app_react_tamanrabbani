@@ -11,6 +11,7 @@ class Program extends Model
     use HasFactory, SoftDeletes;
 
     protected $connection = 'mysql';
+
     protected $table = 'programs';
 
     protected $fillable = [

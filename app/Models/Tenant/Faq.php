@@ -10,6 +10,7 @@ class Faq extends Model
     use HasFactory;
 
     protected $connection = 'mysql';
+
     protected $table = 'faqs';
 
     protected $fillable = [

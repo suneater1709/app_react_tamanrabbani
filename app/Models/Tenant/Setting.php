@@ -10,6 +10,7 @@ class Setting extends Model
     use HasFactory;
 
     protected $connection = 'mysql';
+
     protected $table = 'settings';
 
     protected $fillable = [

@@ -2,11 +2,17 @@
 
 namespace App\Providers;
 
+use App\Models\Admin\PersonalAccessToken;
+use App\Repositories\Contracts\CmsRepositoryInterface;
+use App\Repositories\Contracts\PendaftarRepositoryInterface;
+use App\Repositories\Eloquent\CmsRepository;
+use App\Repositories\Eloquent\PendaftarRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,12 +22,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(
-            \App\Repositories\Contracts\PendaftarRepositoryInterface::class,
-            \App\Repositories\Eloquent\PendaftarRepository::class
+            PendaftarRepositoryInterface::class,
+            PendaftarRepository::class
         );
         $this->app->bind(
-            \App\Repositories\Contracts\CmsRepositoryInterface::class,
-            \App\Repositories\Eloquent\CmsRepository::class
+            CmsRepositoryInterface::class,
+            CmsRepository::class
         );
     }
 
@@ -31,7 +37,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
-        \Laravel\Sanctum\Sanctum::usePersonalAccessTokenModel(\App\Models\Admin\PersonalAccessToken::class);
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
     }
 
     /**

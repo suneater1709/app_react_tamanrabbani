@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\ActivityLog;
 use App\Models\Tenant\Pendaftar;
 use App\Models\Tenant\Program;
-use App\Models\Admin\ActivityLog;
 use Illuminate\Http\JsonResponse;
 
 class DashboardController extends Controller
@@ -69,12 +69,12 @@ class DashboardController extends Controller
                     'total' => $total,
                     'accepted' => $accepted,
                     'revision' => $revision,
-                    'pending' => $pending
+                    'pending' => $pending,
                 ],
                 'programs' => $programs,
                 'latest_registrations' => $latestRegistrations,
-                'recent_activities' => $recentActivities
-            ]
+                'recent_activities' => $recentActivities,
+            ],
         ]);
     }
 }

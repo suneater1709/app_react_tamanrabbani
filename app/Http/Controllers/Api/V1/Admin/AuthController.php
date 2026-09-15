@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin\User;
 use App\Models\Admin\LoginLog;
+use App\Models\Admin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -28,17 +28,17 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         // Query user on mysql_admin database connection
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email/username atau password Anda salah.'
+                'message' => 'Email/username atau password Anda salah.',
             ], 401);
         }
 
@@ -62,10 +62,10 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'roles' => $user->roles->pluck('name')
+                    'roles' => $user->roles->pluck('name'),
                 ],
-                'login_log_id' => $loginLog->id
-            ]
+                'login_log_id' => $loginLog->id,
+            ],
         ]);
     }
 
@@ -75,7 +75,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         if ($user) {
             // Revoke current token
             $user->currentAccessToken()->delete();
@@ -94,7 +94,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logout berhasil.'
+            'message' => 'Logout berhasil.',
         ]);
     }
 
@@ -104,7 +104,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -112,10 +112,10 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'roles' => $user->roles->pluck('name'),
-                'permissions' => $user->roles->flatMap(function($role) {
+                'permissions' => $user->roles->flatMap(function ($role) {
                     return $role->permissions->pluck('name');
-                })->unique()->values()
-            ]
+                })->unique()->values(),
+            ],
         ]);
     }
 }

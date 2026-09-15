@@ -10,6 +10,7 @@ class StudentDocument extends Model
     use HasFactory;
 
     protected $connection = 'mysql';
+
     protected $table = 'student_documents';
 
     protected $fillable = [

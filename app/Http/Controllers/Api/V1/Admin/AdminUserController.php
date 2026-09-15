@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin\User;
 use App\Models\Admin\Role;
+use App\Models\Admin\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 
 class AdminUserController extends Controller
 {
@@ -23,7 +23,7 @@ class AdminUserController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $users
+            'data' => $users,
         ]);
     }
 
@@ -33,10 +33,10 @@ class AdminUserController extends Controller
     public function store(Request $request): JsonResponse
     {
         // Check if the current user is Super Admin
-        if (!$request->user()->hasRole('super_admin')) {
+        if (! $request->user()->hasRole('super_admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya Super Admin yang dapat menambahkan admin baru.'
+                'message' => 'Hanya Super Admin yang dapat menambahkan admin baru.',
             ], 403);
         }
 
@@ -58,7 +58,7 @@ class AdminUserController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -79,7 +79,7 @@ class AdminUserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Admin baru berhasil ditambahkan.',
-                'data' => $user->load('roles')
+                'data' => $user->load('roles'),
             ]);
         });
     }
@@ -90,10 +90,10 @@ class AdminUserController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         // Check if the current user is Super Admin
-        if (!$request->user()->hasRole('super_admin')) {
+        if (! $request->user()->hasRole('super_admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya Super Admin yang dapat mengubah data admin.'
+                'message' => 'Hanya Super Admin yang dapat mengubah data admin.',
             ], 403);
         }
 
@@ -101,7 +101,7 @@ class AdminUserController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|max:255|unique:mysql_admin.users,email,' . $id,
+            'email' => 'required|string|max:255|unique:mysql_admin.users,email,'.$id,
             'password' => 'nullable|string|min:6',
             'role' => 'required|string|in:super_admin,admin,verifier',
         ], [
@@ -115,7 +115,7 @@ class AdminUserController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -141,7 +141,7 @@ class AdminUserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Data admin berhasil diperbarui.',
-                'data' => $user->load('roles')
+                'data' => $user->load('roles'),
             ]);
         });
     }
@@ -152,10 +152,10 @@ class AdminUserController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         // Check if the current user is Super Admin
-        if (!$request->user()->hasRole('super_admin')) {
+        if (! $request->user()->hasRole('super_admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Hanya Super Admin yang dapat menghapus admin.'
+                'message' => 'Hanya Super Admin yang dapat menghapus admin.',
             ], 403);
         }
 
@@ -163,7 +163,7 @@ class AdminUserController extends Controller
         if ($request->user()->id === $id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak dapat menghapus akun Anda sendiri.'
+                'message' => 'Anda tidak dapat menghapus akun Anda sendiri.',
             ], 400);
         }
 
@@ -173,7 +173,7 @@ class AdminUserController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Akun admin berhasil dihapus.'
+            'message' => 'Akun admin berhasil dihapus.',
         ]);
     }
 }

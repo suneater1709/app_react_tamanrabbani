@@ -2,15 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\Admin\ActivityLog;
 use App\Models\Admin\AdminSetting;
+use App\Models\Admin\LoginLog;
 use App\Models\Admin\Permission;
 use App\Models\Admin\Role;
 use App\Models\Admin\User;
-use App\Models\Admin\ActivityLog;
-use App\Models\Admin\LoginLog;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Carbon;
 
 class AdminDatabaseSeeder extends Seeder
 {
@@ -43,7 +42,7 @@ class AdminDatabaseSeeder extends Seeder
         // Assign Permissions to Roles
         // Super Admin gets all
         $superAdminRole->permissions()->sync(collect($permissionModels)->pluck('id')->toArray());
-        
+
         // Verifier gets specific permissions
         $verifierPermissions = [
             $permissionModels['verify-applicants']->id,

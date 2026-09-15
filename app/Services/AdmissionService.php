@@ -2,15 +2,13 @@
 
 namespace App\Services;
 
-use App\Models\Tenant\Pendaftar;
-use App\Models\Tenant\StudentParent;
-use App\Models\Tenant\StudentDocument;
-use App\Models\Tenant\StudentStatusLog;
 use App\Models\Admin\ActivityLog;
+use App\Models\Tenant\Pendaftar;
+use App\Models\Tenant\StudentDocument;
+use App\Models\Tenant\StudentParent;
+use App\Models\Tenant\StudentStatusLog;
 use App\Repositories\Contracts\PendaftarRepositoryInterface;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class AdmissionService
 {
@@ -33,7 +31,7 @@ class AdmissionService
                 ->table('pendaftar')
                 ->whereYear('created_at', $year)
                 ->count();
-            
+
             $sequence = str_pad($count + 1, 4, '0', STR_PAD_LEFT);
             $regNumber = "TR-{$year}-{$sequence}";
 
@@ -59,7 +57,7 @@ class AdmissionService
             // 3. Create Parents Data
             $parentTypes = ['father', 'mother', 'guardian'];
             foreach ($parentTypes as $type) {
-                if (isset($data['parents'][$type]) && !empty($data['parents'][$type]['name'])) {
+                if (isset($data['parents'][$type]) && ! empty($data['parents'][$type]['name'])) {
                     StudentParent::create([
                         'pendaftar_id' => $pendaftar->id,
                         'type' => $type,
@@ -77,7 +75,7 @@ class AdmissionService
             foreach ($files as $type => $file) {
                 if ($file->isValid()) {
                     $path = $file->store("documents/{$regNumber}", 'public');
-                    
+
                     StudentDocument::create([
                         'pendaftar_id' => $pendaftar->id,
                         'document_type' => $type, // 'birth_certificate', 'family_card', 'photo'
@@ -168,7 +166,7 @@ class AdmissionService
             StudentParent::where('pendaftar_id', $pendaftar->id)->delete();
             $parentTypes = ['father', 'mother', 'guardian'];
             foreach ($parentTypes as $type) {
-                if (isset($data['parents'][$type]) && !empty($data['parents'][$type]['name'])) {
+                if (isset($data['parents'][$type]) && ! empty($data['parents'][$type]['name'])) {
                     StudentParent::create([
                         'pendaftar_id' => $pendaftar->id,
                         'type' => $type,
@@ -186,7 +184,7 @@ class AdmissionService
             foreach ($files as $type => $file) {
                 if ($file->isValid()) {
                     $path = $file->store("documents/{$regNumber}", 'public');
-                    
+
                     StudentDocument::updateOrCreate(
                         ['pendaftar_id' => $pendaftar->id, 'document_type' => $type],
                         ['file_path' => $path, 'file_size' => $file->getSize()]

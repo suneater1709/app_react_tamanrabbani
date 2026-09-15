@@ -13,6 +13,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $connection = 'mysql_admin';
+
     protected $table = 'users';
 
     protected $fillable = [
@@ -63,6 +64,7 @@ class User extends Authenticatable
                 return true;
             }
         }
+
         return false;
     }
 }

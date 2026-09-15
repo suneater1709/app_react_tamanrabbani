@@ -10,6 +10,7 @@ class LoginLog extends Model
     use HasUuids;
 
     protected $connection = 'mysql_admin';
+
     protected $table = 'login_logs';
 
     protected $fillable = [

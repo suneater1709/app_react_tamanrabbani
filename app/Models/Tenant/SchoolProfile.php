@@ -10,6 +10,7 @@ class SchoolProfile extends Model
     use HasFactory;
 
     protected $connection = 'mysql';
+
     protected $table = 'school_profiles';
 
     protected $fillable = [

@@ -10,6 +10,7 @@ class ActivityLog extends Model
     use HasUuids;
 
     protected $connection = 'mysql_admin';
+
     protected $table = 'activity_logs';
 
     protected $fillable = [

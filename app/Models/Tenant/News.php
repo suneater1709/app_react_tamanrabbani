@@ -34,10 +34,10 @@ class News extends Model
         if (! $this->image) {
             return null;
         }
-        if (str_starts_with($this->image, 'http://') || str_starts_with($this->image, 'https://')) {
+        if (str_starts_with($this->image, 'http://') || str_starts_with($this->image, 'https://') || str_starts_with($this->image, '/')) {
             return $this->image;
         }
 
-        return url('storage/'.ltrim($this->image, '/'));
+        return '/storage/'.ltrim($this->image, '/');
     }
 }

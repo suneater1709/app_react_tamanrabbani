@@ -10,6 +10,7 @@ class Announcement extends Model
     use HasFactory;
 
     protected $connection = 'mysql';
+
     protected $table = 'announcements';
 
     protected $fillable = [

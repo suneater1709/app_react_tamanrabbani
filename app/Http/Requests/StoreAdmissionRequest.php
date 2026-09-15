@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Tenant\Pendaftar;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreAdmissionRequest extends FormRequest
@@ -29,7 +30,7 @@ class StoreAdmissionRequest extends FormRequest
             // Step 2: Student details
             'full_name' => 'required|string|max:255',
             'nickname' => 'required|string|max:100',
-            'nik' => 'required|string|size:16|unique:pendaftar,nik' . ($this->route('regNumber') ? ',' . \App\Models\Tenant\Pendaftar::where('registration_number', $this->route('regNumber'))->value('id') : ''),
+            'nik' => 'required|string|size:16|unique:pendaftar,nik'.($this->route('regNumber') ? ','.Pendaftar::where('registration_number', $this->route('regNumber'))->value('id') : ''),
             'gender' => 'required|in:L,P',
             'birth_place' => 'required|string|max:255',
             'birth_date' => 'required|date',

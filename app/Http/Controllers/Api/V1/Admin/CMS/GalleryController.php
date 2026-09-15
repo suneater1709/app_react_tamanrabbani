@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Admin\CMS;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\Gallery;
 use App\Models\Admin\ActivityLog;
+use App\Models\Tenant\Gallery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -18,9 +18,10 @@ class GalleryController extends Controller
     public function index(Request $request): JsonResponse
     {
         $gallery = Gallery::orderBy('created_at', 'desc')->get();
+
         return response()->json([
             'success' => true,
-            'data' => $gallery
+            'data' => $gallery,
         ]);
     }
 
@@ -44,7 +45,7 @@ class GalleryController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -71,7 +72,7 @@ class GalleryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Foto berhasil ditambahkan ke galeri.',
-            'data' => $item
+            'data' => $item,
         ], 201);
     }
 
@@ -82,16 +83,16 @@ class GalleryController extends Controller
     {
         $item = Gallery::find($id);
 
-        if (!$item) {
+        if (! $item) {
             return response()->json([
                 'success' => false,
-                'message' => 'Foto tidak ditemukan.'
+                'message' => 'Foto tidak ditemukan.',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $item
+            'data' => $item,
         ]);
     }
 
@@ -102,10 +103,10 @@ class GalleryController extends Controller
     {
         $item = Gallery::find($id);
 
-        if (!$item) {
+        if (! $item) {
             return response()->json([
                 'success' => false,
-                'message' => 'Foto tidak ditemukan.'
+                'message' => 'Foto tidak ditemukan.',
             ], 404);
         }
 
@@ -122,7 +123,7 @@ class GalleryController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -132,7 +133,7 @@ class GalleryController extends Controller
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
             // Delete old file if exists
             Storage::disk('public')->delete($item->image);
-            
+
             $path = $request->file('image')->store('gallery', 'public');
             $data['image'] = $path;
         }
@@ -152,7 +153,7 @@ class GalleryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Detail foto berhasil diperbarui.',
-            'data' => $item
+            'data' => $item,
         ]);
     }
 
@@ -163,10 +164,10 @@ class GalleryController extends Controller
     {
         $item = Gallery::find($id);
 
-        if (!$item) {
+        if (! $item) {
             return response()->json([
                 'success' => false,
-                'message' => 'Foto tidak ditemukan.'
+                'message' => 'Foto tidak ditemukan.',
             ], 404);
         }
 
@@ -187,7 +188,7 @@ class GalleryController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Foto berhasil dihapus dari galeri.'
+            'message' => 'Foto berhasil dihapus dari galeri.',
         ]);
     }
 }

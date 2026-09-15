@@ -10,6 +10,7 @@ class Slider extends Model
     use HasFactory;
 
     protected $connection = 'mysql';
+
     protected $table = 'sliders';
 
     protected $fillable = [
@@ -30,7 +31,7 @@ class Slider extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        if (!$this->image) {
+        if (! $this->image) {
             return null;
         }
 
@@ -38,6 +39,6 @@ class Slider extends Model
             return $this->image;
         }
 
-        return \Illuminate\Support\Facades\Storage::url($this->image);
+        return '/storage/'.ltrim($this->image, '/');
     }
 }

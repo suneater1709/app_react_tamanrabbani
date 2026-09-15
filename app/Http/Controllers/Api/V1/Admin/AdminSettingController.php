@@ -22,7 +22,14 @@ class AdminSettingController extends Controller
             ?? Setting::where('key', 'logo_admin_login')->first()?->value
             ?? '';
 
-        $logoUrl = $unifiedLogo ? Storage::url($unifiedLogo) : '';
+        $logoUrl = '';
+        if ($unifiedLogo) {
+            if (str_starts_with($unifiedLogo, 'http://') || str_starts_with($unifiedLogo, 'https://') || str_starts_with($unifiedLogo, '/')) {
+                $logoUrl = $unifiedLogo;
+            } else {
+                $logoUrl = '/storage/'.ltrim($unifiedLogo, '/');
+            }
+        }
 
         return response()->json([
             'success' => true,

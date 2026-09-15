@@ -2,6 +2,7 @@
 
 namespace App\Models\Tenant;
 
+use App\Models\Admin\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -10,6 +11,7 @@ class StudentStatusLog extends Model
     use HasFactory;
 
     protected $connection = 'mysql';
+
     protected $table = 'student_status_logs';
 
     protected $fillable = [
@@ -28,6 +30,6 @@ class StudentStatusLog extends Model
     // Cross-database relationship
     public function changedByUser()
     {
-        return $this->belongsTo(\App\Models\Admin\User::class, 'changed_by');
+        return $this->belongsTo(User::class, 'changed_by');
     }
 }

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Admin\CMS;
 
 use App\Http\Controllers\Controller;
-use App\Models\Tenant\SchoolProfile;
 use App\Models\Admin\ActivityLog;
+use App\Models\Tenant\SchoolProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -18,7 +18,7 @@ class ProfileController extends Controller
     {
         $keys = ['history', 'vision', 'mission', 'welcome_message'];
         $profiles = [];
-        
+
         foreach ($keys as $key) {
             $record = SchoolProfile::where('key', $key)->first();
             $profiles[$key] = $record ? $record->value : '';
@@ -26,7 +26,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $profiles
+            'data' => $profiles,
         ]);
     }
 
@@ -45,7 +45,7 @@ class ProfileController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -70,7 +70,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Profil sekolah berhasil diperbarui.'
+            'message' => 'Profil sekolah berhasil diperbarui.',
         ]);
     }
 }

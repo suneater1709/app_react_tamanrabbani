@@ -12,6 +12,7 @@ class Pendaftar extends Model
     use HasFactory, SoftDeletes;
 
     protected $connection = 'mysql';
+
     protected $table = 'pendaftar';
 
     protected $fillable = [

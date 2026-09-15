@@ -19,7 +19,7 @@ class HomeController extends Controller
     public function index(): JsonResponse
     {
         $tagline = SchoolProfile::where('key', 'hero_tagline')->value('value') ?: "Berkarakter Qur'an";
-        $videoUrl = SchoolProfile::where('key', 'about_video_url')->value('value') ?: "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+        $videoUrl = SchoolProfile::where('key', 'about_video_url')->value('value') ?: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
         $sliders = Slider::orderBy('order', 'asc')->orderBy('id', 'desc')->get();
 
         return response()->json([
