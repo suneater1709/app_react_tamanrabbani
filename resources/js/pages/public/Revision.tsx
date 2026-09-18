@@ -98,7 +98,7 @@ export default function Revision() {
         setValue,
         watch,
         formState: { errors },
-    } = useForm({
+    } = useForm<any>({
         resolver: getResolver(),
         mode: 'onBlur',
     });

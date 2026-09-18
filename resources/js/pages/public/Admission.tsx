@@ -100,10 +100,12 @@ export default function Admission() {
         setValue,
         watch,
         formState: { errors },
-    } = useForm({
+    } = useForm<any>({
         resolver: getResolver(),
         mode: 'onBlur',
     });
+
+    const watchProgramId = watch('program_id');
 
     // Sync browser history with form state & steps
     useEffect(() => {
