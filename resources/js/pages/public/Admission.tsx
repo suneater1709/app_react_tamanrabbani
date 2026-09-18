@@ -4,24 +4,37 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { BookOpen, User, Users, Upload, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, Calendar, Sparkles, FileText, HelpCircle, FilePlus, ArrowRight } from 'lucide-react';
+import { BookOpen, User, Users, Upload, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, Calendar, Sparkles, FileText, HelpCircle, FilePlus, ArrowRight, Wallet, Receipt } from 'lucide-react';
 import { cmsApi } from '../../services/api';
 import axios from 'axios';
 
-// 1. Zod Validation Schemas for each Step
+// 1. Zod Validation Schemas for each Step with strict input defenses
 const step1Schema = z.object({
     email: z.string().email('Format email tidak valid.'),
-    phone: z.string().min(8, 'Nomor HP minimal berisi 8 karakter.'),
+    phone: z.string()
+        .min(8, 'Nomor HP minimal berisi 8 digit.')
+        .max(16, 'Nomor HP maksimal 16 digit.')
+        .regex(/^\d+$/, 'Nomor HP hanya boleh berisi angka (tidak boleh ada huruf).'),
 });
 
 const step2Schema = z.object({
-    full_name: z.string().min(3, 'Nama lengkap minimal berisi 3 karakter.'),
-    nickname: z.string().min(2, 'Nama panggilan minimal berisi 2 karakter.'),
-    nik: z.string().length(16, 'NIK harus berupa 16 digit angka.'),
+    full_name: z.string()
+        .min(3, 'Nama lengkap minimal berisi 3 karakter.')
+        .regex(/^[^0-9]+$/, 'Nama lengkap hanya boleh berisi huruf (tidak boleh angka).'),
+    nickname: z.string()
+        .min(2, 'Nama panggilan minimal berisi 2 karakter.')
+        .regex(/^[^0-9]+$/, 'Nama panggilan hanya boleh berisi huruf (tidak boleh angka).'),
+    nik: z.string()
+        .length(16, 'NIK harus berupa 16 digit angka.')
+        .regex(/^\d{16}$/, 'NIK harus 16 digit angka (tidak boleh ada huruf).'),
     gender: z.enum(['L', 'P'], { required_error: 'Pilih jenis kelamin.' }),
-    birth_place: z.string().min(3, 'Tempat lahir wajib diisi.'),
+    birth_place: z.string()
+        .min(3, 'Tempat lahir wajib diisi.')
+        .regex(/^[^0-9]+$/, 'Tempat lahir hanya boleh berisi huruf (tidak boleh angka).'),
     birth_date: z.string().min(1, 'Tanggal lahir wajib diisi.'),
-    religion: z.string().min(3, 'Agama wajib diisi.'),
+    religion: z.string()
+        .min(3, 'Agama wajib diisi.')
+        .regex(/^[^0-9]+$/, 'Agama hanya boleh berisi huruf (tidak boleh angka).'),
     address: z.string().min(10, 'Alamat lengkap minimal berisi 10 karakter.'),
     previous_school: z.string().optional(),
 });
@@ -32,24 +45,28 @@ const step3Schema = z.object({
 });
 
 const step4Schema = z.object({
-    father_name: z.string().min(3, 'Nama ayah kandung wajib diisi.'),
-    father_occupation: z.string().optional(),
+    father_name: z.string()
+        .min(3, 'Nama ayah kandung wajib diisi.')
+        .regex(/^[^0-9]+$/, 'Nama ayah hanya boleh berisi huruf (tidak boleh angka).'),
+    father_occupation: z.string().optional().refine(v => !v || /^[^0-9]+$/.test(v), 'Pekerjaan ayah tidak boleh mengandung angka.'),
     father_education: z.string().optional(),
-    father_phone: z.string().optional(),
+    father_phone: z.string().optional().refine(v => !v || /^\d+$/.test(v), 'Nomor telepon ayah hanya boleh berisi angka.'),
     father_email: z.string().optional(),
     father_income: z.string().optional(),
     
-    mother_name: z.string().min(3, 'Nama ibu kandung wajib diisi.'),
-    mother_occupation: z.string().optional(),
+    mother_name: z.string()
+        .min(3, 'Nama ibu kandung wajib diisi.')
+        .regex(/^[^0-9]+$/, 'Nama ibu hanya boleh berisi huruf (tidak boleh angka).'),
+    mother_occupation: z.string().optional().refine(v => !v || /^[^0-9]+$/.test(v), 'Pekerjaan ibu tidak boleh mengandung angka.'),
     mother_education: z.string().optional(),
-    mother_phone: z.string().optional(),
+    mother_phone: z.string().optional().refine(v => !v || /^\d+$/.test(v), 'Nomor telepon ibu hanya boleh berisi angka.'),
     mother_email: z.string().optional(),
     mother_income: z.string().optional(),
     
-    guardian_name: z.string().optional(),
-    guardian_occupation: z.string().optional(),
+    guardian_name: z.string().optional().refine(v => !v || /^[^0-9]+$/.test(v), 'Nama wali hanya boleh berisi huruf (tidak boleh angka).'),
+    guardian_occupation: z.string().optional().refine(v => !v || /^[^0-9]+$/.test(v), 'Pekerjaan wali tidak boleh mengandung angka.'),
     guardian_education: z.string().optional(),
-    guardian_phone: z.string().optional(),
+    guardian_phone: z.string().optional().refine(v => !v || /^\d+$/.test(v), 'Nomor telepon wali hanya boleh berisi angka.'),
     guardian_email: z.string().optional(),
     guardian_income: z.string().optional(),
 });
@@ -106,6 +123,46 @@ export default function Admission() {
     });
 
     const watchProgramId = watch('program_id');
+
+    // Input Defense Helpers: Prevent numbers in letter-only fields & letters in numeric-only fields
+    const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (
+            ['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter'].includes(e.key) ||
+            e.ctrlKey || e.metaKey
+        ) {
+            return;
+        }
+        if (!/^[0-9]$/.test(e.key)) {
+            e.preventDefault();
+        }
+    };
+
+    const handleNumericInput = (e: React.FormEvent<HTMLInputElement>, fieldName: string, maxLen?: number) => {
+        let cleanVal = e.currentTarget.value.replace(/\D/g, '');
+        if (maxLen && cleanVal.length > maxLen) {
+            cleanVal = cleanVal.slice(0, maxLen);
+        }
+        e.currentTarget.value = cleanVal;
+        setValue(fieldName, cleanVal, { shouldValidate: true, shouldDirty: true });
+    };
+
+    const handleLetterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (
+            ['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter', ' ', '.', ',', "'", '-'].includes(e.key) ||
+            e.ctrlKey || e.metaKey
+        ) {
+            return;
+        }
+        if (/^[0-9]$/.test(e.key)) {
+            e.preventDefault();
+        }
+    };
+
+    const handleLetterInput = (e: React.FormEvent<HTMLInputElement>, fieldName: string) => {
+        const cleanVal = e.currentTarget.value.replace(/[0-9]/g, '');
+        e.currentTarget.value = cleanVal;
+        setValue(fieldName, cleanVal, { shouldValidate: true, shouldDirty: true });
+    };
 
     // Sync browser history with form state & steps
     useEffect(() => {
@@ -427,7 +484,128 @@ export default function Admission() {
                         </div>
                     </div>
 
-                    {/* C. 4 Langkah Mudah Infographic */}
+                    {/* C. Rincian Biaya Masuk PPDB (KB & TK) */}
+                    <div className="max-w-5xl mx-auto mb-16">
+                        <div className="text-center mb-8">
+                            <span className="inline-block px-3 py-1 bg-teal-100 text-teal-800 text-xxs font-extrabold uppercase tracking-widest rounded-full mb-2">
+                                RINCIAN INVESTASI PENDIDIKAN
+                            </span>
+                            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800">Rincian Biaya Masuk PPDB</h2>
+                            <p className="mt-1 text-slate-500 text-xs sm:text-sm">
+                                Transparansi biaya pendidikan tahun ajaran baru untuk Kelompok Bermain dan Taman Kanak-Kanak.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+                            {/* Card 1: Kelompok Bermain (KB) */}
+                            {(() => {
+                                const kbFee = settings?.ppdb_fee_structure?.kb || {
+                                    title: 'Kelompok Bermain (Playgroup)',
+                                    total: 2800000,
+                                    items: [
+                                        { name: 'Infaq Pengembangan Gedung & Sarpras', amount: 1200000 },
+                                        { name: 'Seragam Sekolah & Atribut (4 Stel)', amount: 650000 },
+                                        { name: 'Buku Paket Sentra & Bahan Ajar 1 Tahun', amount: 400000 },
+                                        { name: 'SPP Bulan Pertama (Juli)', amount: 450000 },
+                                        { name: 'Kegiatan Outing & Parenting 1 Semester', amount: 100000 },
+                                    ]
+                                };
+                                const formattedTotal = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(kbFee.total || 2800000);
+                                return (
+                                    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-100 flex flex-col justify-between relative overflow-hidden">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xxs font-extrabold uppercase rounded-full">
+                                                    Usia 3 - 4 Tahun
+                                                </span>
+                                                <Wallet className="text-amber-600" size={22} />
+                                            </div>
+                                            
+                                            <h3 className="text-lg sm:text-xl font-bold text-slate-800">{kbFee.title}</h3>
+                                            
+                                            <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-100 flex items-baseline justify-between">
+                                                <span className="text-xs text-amber-900 font-bold">Total Biaya Masuk:</span>
+                                                <span className="text-xl sm:text-2xl font-extrabold text-amber-700">{formattedTotal}</span>
+                                            </div>
+
+                                            <div className="space-y-2 pt-2">
+                                                <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider block">Rincian Komponen Biaya:</span>
+                                                <div className="space-y-2 text-xs">
+                                                    {(kbFee.items || []).map((item: any, i: number) => (
+                                                        <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                                                            <span className="text-slate-600 font-medium">{item.name}</span>
+                                                            <span className="text-slate-800 font-bold">
+                                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.amount)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-6 pt-4 border-t border-slate-100 text-xxs text-slate-500">
+                                            * Belum termasuk potongan diskon gelombang early bird sebesar s.d Rp 400.000.
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Card 2: Taman Kanak-Kanak (TK) */}
+                            {(() => {
+                                const tkFee = settings?.ppdb_fee_structure?.tk || {
+                                    title: 'Taman Kanak-Kanak (TK A & TK B)',
+                                    total: 3950000,
+                                    items: [
+                                        { name: 'Infaq Pengembangan Gedung & Sarpras', amount: 1900000 },
+                                        { name: 'Seragam Sekolah & Atribut (5 Stel)', amount: 800000 },
+                                        { name: 'Buku Paket, Modul Yanbu\'a & APE', amount: 500000 },
+                                        { name: 'SPP Bulan Pertama (Juli)', amount: 600000 },
+                                        { name: 'Kegiatan Outing, Manasik & PHBI/PHBN', amount: 150000 },
+                                    ]
+                                };
+                                const formattedTotal = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(tkFee.total || 3950000);
+                                return (
+                                    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-100 flex flex-col justify-between relative overflow-hidden">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="px-3 py-1 bg-teal-100 text-teal-800 text-xxs font-extrabold uppercase rounded-full">
+                                                    Usia 4 - 6 Tahun
+                                                </span>
+                                                <Receipt className="text-teal-600" size={22} />
+                                            </div>
+                                            
+                                            <h3 className="text-lg sm:text-xl font-bold text-slate-800">{tkFee.title}</h3>
+                                            
+                                            <div className="p-4 bg-teal-50/60 rounded-2xl border border-teal-100 flex items-baseline justify-between">
+                                                <span className="text-xs text-teal-900 font-bold">Total Biaya Masuk:</span>
+                                                <span className="text-xl sm:text-2xl font-extrabold text-teal-700">{formattedTotal}</span>
+                                            </div>
+
+                                            <div className="space-y-2 pt-2">
+                                                <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider block">Rincian Komponen Biaya:</span>
+                                                <div className="space-y-2 text-xs">
+                                                    {(tkFee.items || []).map((item: any, i: number) => (
+                                                        <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                                                            <span className="text-slate-600 font-medium">{item.name}</span>
+                                                            <span className="text-slate-800 font-bold">
+                                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.amount)}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-6 pt-4 border-t border-slate-100 text-xxs text-slate-500">
+                                            * Termasuk modul tilawati/Yanbu'a dan seragam olahraga, batik, dan muslim.
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    </div>
+
+                    {/* D. 4 Langkah Mudah Infographic */}
                     <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-md max-w-5xl mx-auto text-center mb-10 border-none">
                         <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 text-xxs font-extrabold uppercase tracking-widest rounded-full mb-3">
                             TAHAPAN PPDB
@@ -549,10 +727,13 @@ export default function Admission() {
                                         <label className="block text-xxs font-bold text-slate-500 uppercase tracking-wider mb-2">Nomor HP / WhatsApp *</label>
                                         <input
                                             type="text"
+                                            inputMode="numeric"
                                             defaultValue={formData.phone || ''}
                                             {...register('phone')}
+                                            onKeyDown={handleNumericKeyDown}
+                                            onInput={(e) => handleNumericInput(e, 'phone', 16)}
                                             className="w-full px-4 py-3 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs sm:text-sm font-semibold"
-                                            placeholder="contoh: 08123456789"
+                                            placeholder="contoh: 08123456789 (Hanya angka)"
                                         />
                                         {errors.phone && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.phone.message as string}</p>}
                                     </div>
@@ -575,8 +756,10 @@ export default function Admission() {
                                             type="text"
                                             defaultValue={formData.full_name || ''}
                                             {...register('full_name')}
+                                            onKeyDown={handleLetterKeyDown}
+                                            onInput={(e) => handleLetterInput(e, 'full_name')}
                                             className="w-full px-4 py-3 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs sm:text-sm font-semibold"
-                                            placeholder="Nama lengkap anak sesuai Akta"
+                                            placeholder="Nama lengkap anak sesuai Akta (Hanya huruf)"
                                         />
                                         {errors.full_name && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.full_name.message as string}</p>}
                                     </div>
@@ -587,8 +770,10 @@ export default function Admission() {
                                             type="text"
                                             defaultValue={formData.nickname || ''}
                                             {...register('nickname')}
+                                            onKeyDown={handleLetterKeyDown}
+                                            onInput={(e) => handleLetterInput(e, 'nickname')}
                                             className="w-full px-4 py-3 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs sm:text-sm font-semibold"
-                                            placeholder="Panggilan"
+                                            placeholder="Panggilan (Hanya huruf)"
                                         />
                                         {errors.nickname && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.nickname.message as string}</p>}
                                     </div>
@@ -597,10 +782,14 @@ export default function Admission() {
                                         <label className="block text-xxs font-bold text-slate-500 uppercase tracking-wider mb-2">Nomor NIK Anak *</label>
                                         <input
                                             type="text"
+                                            inputMode="numeric"
+                                            maxLength={16}
                                             defaultValue={formData.nik || ''}
                                             {...register('nik')}
+                                            onKeyDown={handleNumericKeyDown}
+                                            onInput={(e) => handleNumericInput(e, 'nik', 16)}
                                             className="w-full px-4 py-3 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs sm:text-sm font-semibold"
-                                            placeholder="16 digit nomor NIK"
+                                            placeholder="16 digit nomor NIK (Hanya angka)"
                                         />
                                         {errors.nik && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.nik.message as string}</p>}
                                     </div>
@@ -625,6 +814,8 @@ export default function Admission() {
                                             type="text"
                                             defaultValue={formData.religion || 'Islam'}
                                             {...register('religion')}
+                                            onKeyDown={handleLetterKeyDown}
+                                            onInput={(e) => handleLetterInput(e, 'religion')}
                                             className="w-full px-4 py-3 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs sm:text-sm font-semibold"
                                         />
                                         {errors.religion && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.religion.message as string}</p>}
@@ -636,8 +827,10 @@ export default function Admission() {
                                             type="text"
                                             defaultValue={formData.birth_place || ''}
                                             {...register('birth_place')}
+                                            onKeyDown={handleLetterKeyDown}
+                                            onInput={(e) => handleLetterInput(e, 'birth_place')}
                                             className="w-full px-4 py-3 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs sm:text-sm font-semibold"
-                                            placeholder="Kota tempat lahir"
+                                            placeholder="Kota tempat lahir (Hanya huruf)"
                                         />
                                         {errors.birth_place && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.birth_place.message as string}</p>}
                                     </div>
@@ -777,13 +970,25 @@ export default function Admission() {
                                                 type="text"
                                                 defaultValue={formData.father_name || ''}
                                                 {...register('father_name')}
+                                                onKeyDown={handleLetterKeyDown}
+                                                onInput={(e) => handleLetterInput(e, 'father_name')}
                                                 className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs sm:text-sm font-semibold"
+                                                placeholder="Nama lengkap ayah (Hanya huruf)"
                                             />
                                             {errors.father_name && <p className="text-xs text-rose-500 mt-1 font-semibold">{errors.father_name.message as string}</p>}
                                         </div>
                                         <div>
                                             <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Pekerjaan</label>
-                                            <input type="text" defaultValue={formData.father_occupation || ''} {...register('father_occupation')} className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none text-xs sm:text-sm font-semibold" />
+                                            <input 
+                                                type="text" 
+                                                defaultValue={formData.father_occupation || ''} 
+                                                {...register('father_occupation')} 
+                                                onKeyDown={handleLetterKeyDown}
+                                                onInput={(e) => handleLetterInput(e, 'father_occupation')}
+                                                className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none text-xs sm:text-sm font-semibold" 
+                                                placeholder="Pekerjaan ayah (Hanya huruf)"
+                                            />
+                                            {errors.father_occupation && <p className="text-xs text-rose-500 mt-1 font-semibold">{errors.father_occupation.message as string}</p>}
                                         </div>
                                         <div>
                                             <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Pendidikan Terakhir</label>
@@ -791,7 +996,17 @@ export default function Admission() {
                                         </div>
                                         <div>
                                             <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Nomor Telepon</label>
-                                            <input type="text" defaultValue={formData.father_phone || ''} {...register('father_phone')} className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none text-xs sm:text-sm font-semibold" />
+                                            <input 
+                                                type="text" 
+                                                inputMode="numeric"
+                                                defaultValue={formData.father_phone || ''} 
+                                                {...register('father_phone')} 
+                                                onKeyDown={handleNumericKeyDown}
+                                                onInput={(e) => handleNumericInput(e, 'father_phone', 16)}
+                                                className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none text-xs sm:text-sm font-semibold" 
+                                                placeholder="Nomor HP/WA (Hanya angka)"
+                                            />
+                                            {errors.father_phone && <p className="text-xs text-rose-500 mt-1 font-semibold">{errors.father_phone.message as string}</p>}
                                         </div>
                                         <div>
                                             <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Email</label>
@@ -824,13 +1039,25 @@ export default function Admission() {
                                                 type="text"
                                                 defaultValue={formData.mother_name || ''}
                                                 {...register('mother_name')}
+                                                onKeyDown={handleLetterKeyDown}
+                                                onInput={(e) => handleLetterInput(e, 'mother_name')}
                                                 className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-xs sm:text-sm font-semibold"
+                                                placeholder="Nama lengkap ibu (Hanya huruf)"
                                             />
                                             {errors.mother_name && <p className="text-xs text-rose-500 mt-1 font-semibold">{errors.mother_name.message as string}</p>}
                                         </div>
                                         <div>
                                             <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Pekerjaan</label>
-                                            <input type="text" defaultValue={formData.mother_occupation || ''} {...register('mother_occupation')} className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none text-xs sm:text-sm font-semibold" />
+                                            <input 
+                                                type="text" 
+                                                defaultValue={formData.mother_occupation || ''} 
+                                                {...register('mother_occupation')} 
+                                                onKeyDown={handleLetterKeyDown}
+                                                onInput={(e) => handleLetterInput(e, 'mother_occupation')}
+                                                className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none text-xs sm:text-sm font-semibold" 
+                                                placeholder="Pekerjaan ibu (Hanya huruf)"
+                                            />
+                                            {errors.mother_occupation && <p className="text-xs text-rose-500 mt-1 font-semibold">{errors.mother_occupation.message as string}</p>}
                                         </div>
                                         <div>
                                             <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Pendidikan Terakhir</label>
@@ -838,7 +1065,17 @@ export default function Admission() {
                                         </div>
                                         <div>
                                             <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Nomor Telepon</label>
-                                            <input type="text" defaultValue={formData.mother_phone || ''} {...register('mother_phone')} className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none text-xs sm:text-sm font-semibold" />
+                                            <input 
+                                                type="text" 
+                                                inputMode="numeric"
+                                                defaultValue={formData.mother_phone || ''} 
+                                                {...register('mother_phone')} 
+                                                onKeyDown={handleNumericKeyDown}
+                                                onInput={(e) => handleNumericInput(e, 'mother_phone', 16)}
+                                                className="w-full px-4 py-2.5 border border-slate-100 bg-slate-50 rounded-xl focus:outline-none text-xs sm:text-sm font-semibold" 
+                                                placeholder="Nomor HP/WA (Hanya angka)"
+                                            />
+                                            {errors.mother_phone && <p className="text-xs text-rose-500 mt-1 font-semibold">{errors.mother_phone.message as string}</p>}
                                         </div>
                                         <div>
                                             <label className="block text-xxs font-bold text-slate-500 uppercase mb-2">Email</label>

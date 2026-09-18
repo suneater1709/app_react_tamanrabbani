@@ -17,7 +17,10 @@ class News extends Model
         'title',
         'slug',
         'content',
+        'content_type',
         'image',
+        'file_path',
+        'external_link',
         'is_published',
         'seo_title',
         'seo_description',
@@ -27,7 +30,7 @@ class News extends Model
         'is_published' => 'boolean',
     ];
 
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'file_url'];
 
     public function getImageUrlAttribute(): ?string
     {
@@ -39,5 +42,17 @@ class News extends Model
         }
 
         return '/storage/'.ltrim($this->image, '/');
+    }
+
+    public function getFileUrlAttribute(): ?string
+    {
+        if (! $this->file_path) {
+            return null;
+        }
+        if (str_starts_with($this->file_path, 'http://') || str_starts_with($this->file_path, 'https://') || str_starts_with($this->file_path, '/')) {
+            return $this->file_path;
+        }
+
+        return '/storage/'.ltrim($this->file_path, '/');
     }
 }

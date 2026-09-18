@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
     ShieldCheck, Plus, UserPlus, Image, HelpCircle, Loader2, 
     Save, Trash2, Edit, Calendar, Sparkles, CheckCircle2, 
-    Tag, FileText, Check, AlertCircle, Eye, RefreshCw
+    Tag, FileText, Check, AlertCircle, Eye, RefreshCw, Wallet, Receipt, DollarSign
 } from 'lucide-react';
 import axios from 'axios';
 import { adminApi } from '../../services/api';
@@ -24,6 +24,42 @@ interface WaveItem {
     is_active?: boolean;
 }
 
+interface FeeItem {
+    name: string;
+    amount: number;
+}
+
+interface LevelFeeStructure {
+    title: string;
+    total: number;
+    items: FeeItem[];
+}
+
+const DEFAULT_FEE_STRUCTURE: { kb: LevelFeeStructure; tk: LevelFeeStructure } = {
+    kb: {
+        title: 'Kelompok Bermain (Playgroup)',
+        total: 2800000,
+        items: [
+            { name: 'Infaq Pengembangan Gedung & Sarpras', amount: 1200000 },
+            { name: 'Seragam Sekolah & Atribut (4 Stel)', amount: 650000 },
+            { name: 'Buku Paket Sentra & Bahan Ajar 1 Tahun', amount: 400000 },
+            { name: 'SPP Bulan Pertama (Juli)', amount: 450000 },
+            { name: 'Kegiatan Outing & Parenting 1 Semester', amount: 100000 },
+        ]
+    },
+    tk: {
+        title: 'Taman Kanak-Kanak (TK A & TK B)',
+        total: 3950000,
+        items: [
+            { name: 'Infaq Pengembangan Gedung & Sarpras', amount: 1900000 },
+            { name: 'Seragam Sekolah & Atribut (5 Stel)', amount: 800000 },
+            { name: 'Buku Paket, Modul Yanbu\'a & APE', amount: 500000 },
+            { name: 'SPP Bulan Pertama (Juli)', amount: 600000 },
+            { name: 'Kegiatan Outing, Manasik & PHBI/PHBN', amount: 150000 },
+        ]
+    }
+};
+
 export default function Settings() {
     // Current User checks
     const [currentUser, setCurrentUser] = useState<any>(null);
@@ -35,6 +71,7 @@ export default function Settings() {
     const [ppdbAcademicYear, setPpdbAcademicYear] = useState('2026/2027');
     const [ppdbIsOpen, setPpdbIsOpen] = useState(true);
     const [ppdbFormFee, setPpdbFormFee] = useState('Rp 100.000');
+    const [ppdbFeeStructure, setPpdbFeeStructure] = useState(DEFAULT_FEE_STRUCTURE);
     const [ppdbWaves, setPpdbWaves] = useState<WaveItem[]>([
         {
             id: '1',
@@ -107,6 +144,18 @@ export default function Settings() {
         fetchAdmins();
     }, []);
 
+    // Lock background body scroll when modal is open
+    useEffect(() => {
+        if (showModal || deleteId !== null) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showModal, deleteId]);
+
     // 1. Fetch PPDB Settings
     const fetchPpdbSettings = () => {
         setLoadingPpdb(true);
@@ -119,6 +168,9 @@ export default function Settings() {
                     setPpdbFormFee(res.data.ppdb_form_fee || 'Rp 100.000');
                     if (res.data.ppdb_waves && Array.isArray(res.data.ppdb_waves) && res.data.ppdb_waves.length > 0) {
                         setPpdbWaves(res.data.ppdb_waves);
+                    }
+                    if (res.data.ppdb_fee_structure && res.data.ppdb_fee_structure.kb && res.data.ppdb_fee_structure.tk) {
+                        setPpdbFeeStructure(res.data.ppdb_fee_structure);
                     }
                 }
             })
@@ -133,6 +185,14 @@ export default function Settings() {
         setPpdbSuccessMsg(null);
         setPpdbErrorMsg(null);
 
+        // Recalculate totals before saving
+        const kbTotal = ppdbFeeStructure.kb.items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+        const tkTotal = ppdbFeeStructure.tk.items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+        const updatedFeeStructure = {
+            kb: { ...ppdbFeeStructure.kb, total: kbTotal },
+            tk: { ...ppdbFeeStructure.tk, total: tkTotal },
+        };
+
         try {
             const payload = {
                 ppdb_badge_text: ppdbBadgeText,
@@ -140,12 +200,16 @@ export default function Settings() {
                 ppdb_is_open: ppdbIsOpen,
                 ppdb_form_fee: ppdbFormFee,
                 ppdb_waves: ppdbWaves,
+                ppdb_fee_structure: updatedFeeStructure,
             };
             const res = await adminApi.updatePpdbSettings(payload);
             if (res.success) {
-                setPpdbSuccessMsg('Pengaturan jadwal & gelombang PPDB berhasil disimpan! Perubahan otomatis tampil di Landing Page dan Halaman PPDB.');
+                setPpdbSuccessMsg('Pengaturan jadwal, gelombang, dan rincian biaya PPDB berhasil disimpan! Perubahan otomatis tampil di website.');
                 if (res.data?.ppdb_waves) {
                     setPpdbWaves(res.data.ppdb_waves);
+                }
+                if (res.data?.ppdb_fee_structure) {
+                    setPpdbFeeStructure(res.data.ppdb_fee_structure);
                 }
                 scrollToTop();
                 setTimeout(() => setPpdbSuccessMsg(null), 6000);
@@ -156,6 +220,31 @@ export default function Settings() {
         } finally {
             setSavingPpdb(false);
         }
+    };
+
+    // Fee Item Handlers
+    const handleAddFeeItem = (level: 'kb' | 'tk') => {
+        const next = { ...ppdbFeeStructure };
+        next[level].items.push({ name: 'Komponen Baru', amount: 0 });
+        next[level].total = next[level].items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+        setPpdbFeeStructure(next);
+    };
+
+    const handleRemoveFeeItem = (level: 'kb' | 'tk', index: number) => {
+        const next = { ...ppdbFeeStructure };
+        next[level].items = next[level].items.filter((_, i) => i !== index);
+        next[level].total = next[level].items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+        setPpdbFeeStructure(next);
+    };
+
+    const handleFeeItemChange = (level: 'kb' | 'tk', index: number, field: 'name' | 'amount', value: any) => {
+        const next = { ...ppdbFeeStructure };
+        next[level].items[index] = {
+            ...next[level].items[index],
+            [field]: field === 'amount' ? (parseInt(value, 10) || 0) : value,
+        };
+        next[level].total = next[level].items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+        setPpdbFeeStructure(next);
     };
 
     // Wave Array Management
@@ -638,6 +727,137 @@ export default function Settings() {
                             ))}
                         </div>
 
+                        {/* Section 1C: Rincian Biaya Masuk PPDB (KB & TK) */}
+                        <div className="pt-8 border-t border-slate-200 space-y-6">
+                            <div>
+                                <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <Wallet className="text-teal-600" size={20} />
+                                    <span>Rincian Biaya Masuk PPDB (Kelompok Bermain & TK)</span>
+                                </h2>
+                                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                    Atur komponen rincian biaya masuk untuk setiap jenjang. Total biaya akan dihitung secara otomatis dan ditampilkan transparan di halaman PPDB.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* KB FEE EDITOR */}
+                                <div className="p-5 bg-amber-50/40 rounded-2xl border border-amber-200/80 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-xl bg-amber-500 text-white font-bold text-xs flex items-center justify-center">
+                                                KB
+                                            </span>
+                                            <div>
+                                                <h3 className="font-bold text-slate-800 text-sm">{ppdbFeeStructure.kb.title}</h3>
+                                                <span className="text-xxs text-amber-900 font-bold">
+                                                    Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
+                                                        ppdbFeeStructure.kb.items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddFeeItem('kb')}
+                                            className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xxs rounded-lg flex items-center gap-1 transition"
+                                        >
+                                            <Plus size={13} /> Tambah Item
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {ppdbFeeStructure.kb.items.map((item, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-100 shadow-xs">
+                                                <input
+                                                    type="text"
+                                                    value={item.name}
+                                                    onChange={(e) => handleFeeItemChange('kb', idx, 'name', e.target.value)}
+                                                    placeholder="Nama Komponen Biaya"
+                                                    className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
+                                                />
+                                                <div className="relative w-36">
+                                                    <span className="absolute left-2.5 top-1.5 text-slate-400 text-xs font-bold">Rp</span>
+                                                    <input
+                                                        type="number"
+                                                        value={item.amount}
+                                                        onChange={(e) => handleFeeItemChange('kb', idx, 'amount', e.target.value)}
+                                                        placeholder="0"
+                                                        className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveFeeItem('kb', idx)}
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition"
+                                                    title="Hapus baris"
+                                                >
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* TK FEE EDITOR */}
+                                <div className="p-5 bg-teal-50/40 rounded-2xl border border-teal-200/80 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-xl bg-teal-600 text-white font-bold text-xs flex items-center justify-center">
+                                                TK
+                                            </span>
+                                            <div>
+                                                <h3 className="font-bold text-slate-800 text-sm">{ppdbFeeStructure.tk.title}</h3>
+                                                <span className="text-xxs text-teal-900 font-bold">
+                                                    Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
+                                                        ppdbFeeStructure.tk.items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)
+                                                    )}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddFeeItem('tk')}
+                                            className="px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xxs rounded-lg flex items-center gap-1 transition"
+                                        >
+                                            <Plus size={13} /> Tambah Item
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {ppdbFeeStructure.tk.items.map((item, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-teal-100 shadow-xs">
+                                                <input
+                                                    type="text"
+                                                    value={item.name}
+                                                    onChange={(e) => handleFeeItemChange('tk', idx, 'name', e.target.value)}
+                                                    placeholder="Nama Komponen Biaya"
+                                                    className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
+                                                />
+                                                <div className="relative w-36">
+                                                    <span className="absolute left-2.5 top-1.5 text-slate-400 text-xs font-bold">Rp</span>
+                                                    <input
+                                                        type="number"
+                                                        value={item.amount}
+                                                        onChange={(e) => handleFeeItemChange('tk', idx, 'amount', e.target.value)}
+                                                        placeholder="0"
+                                                        className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveFeeItem('tk', idx)}
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition"
+                                                    title="Hapus baris"
+                                                >
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Save Button */}
                         <div className="flex justify-end pt-4 border-t border-slate-100">
                             <button
@@ -653,7 +873,7 @@ export default function Settings() {
                                 ) : (
                                     <>
                                         <Save size={16} />
-                                        <span>Simpan Pengaturan PPDB</span>
+                                        <span>Simpan Seluruh Pengaturan PPDB & Biaya</span>
                                     </>
                                 )}
                             </button>

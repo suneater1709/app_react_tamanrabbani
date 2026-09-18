@@ -26,6 +26,8 @@ class CmsService
             'vision' => $this->cmsRepo->getSchoolProfile('vision'),
             'mission' => $this->cmsRepo->getSchoolProfile('mission'),
             'welcome_message' => $this->cmsRepo->getSchoolProfile('welcome_message'),
+            'goals' => $this->cmsRepo->getSchoolProfile('goals'),
+            'grad_competencies' => $this->cmsRepo->getSchoolProfile('grad_competencies'),
             'hero_tagline' => $this->cmsRepo->getSchoolProfile('hero_tagline') ?: "Berkarakter Qur'an",
             'about_video_url' => $this->cmsRepo->getSchoolProfile('about_video_url') ?: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         ];

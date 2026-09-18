@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\V1\Admin\AdminSettingController;
 use App\Http\Controllers\Api\V1\Admin\AdminUserController;
 use App\Http\Controllers\Api\V1\Admin\AuthController as AdminAuthController;
+use App\Http\Controllers\Api\V1\Admin\CMS\CurriculumProgramController as AdminCurriculumProgramController;
+use App\Http\Controllers\Api\V1\Admin\CMS\FaqController as AdminFaqController;
 use App\Http\Controllers\Api\V1\Admin\CMS\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Api\V1\Admin\CMS\HomeController as AdminHomeController;
 use App\Http\Controllers\Api\V1\Admin\CMS\NewsController as AdminNewsController;
@@ -21,6 +23,7 @@ Route::prefix('v1')->group(function () {
     // Public Routes
     Route::prefix('public')->group(function () {
         Route::get('programs', [PublicCmsController::class, 'programs']);
+        Route::get('cms/curriculum-programs', [PublicCmsController::class, 'curriculumPrograms']);
         Route::get('cms/home', [PublicCmsController::class, 'home']);
         Route::get('cms/news', [PublicCmsController::class, 'news']);
         Route::get('cms/news/{slug}', [PublicCmsController::class, 'newsDetail']);
@@ -69,7 +72,13 @@ Route::prefix('v1')->group(function () {
 
             Route::apiResource('cms/news', AdminNewsController::class);
             Route::apiResource('cms/gallery', AdminGalleryController::class);
+            Route::apiResource('cms/faqs', AdminFaqController::class);
             Route::apiResource('cms/programs', AdminProgramController::class);
+            Route::apiResource('cms/curriculum-programs', AdminCurriculumProgramController::class);
+            Route::get('cms/extracurriculars', [AdminCurriculumProgramController::class, 'getExtracurriculars']);
+            Route::post('cms/extracurriculars', [AdminCurriculumProgramController::class, 'storeExtracurricular']);
+            Route::put('cms/extracurriculars/{id}', [AdminCurriculumProgramController::class, 'updateExtracurricular']);
+            Route::delete('cms/extracurriculars/{id}', [AdminCurriculumProgramController::class, 'destroyExtracurricular']);
             Route::get('cms/profile', [AdminProfileController::class, 'index']);
             Route::put('cms/profile', [AdminProfileController::class, 'update']);
 

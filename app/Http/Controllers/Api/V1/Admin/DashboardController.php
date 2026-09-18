@@ -19,6 +19,7 @@ class DashboardController extends Controller
         $total = Pendaftar::count();
         $accepted = Pendaftar::where('status', 'accepted')->count();
         $revision = Pendaftar::where('status', 'revision')->count();
+        $rejected = Pendaftar::where('status', 'rejected')->count();
         $pending = Pendaftar::where('status', 'pending')->count();
 
         // 2. Program statistics
@@ -69,6 +70,7 @@ class DashboardController extends Controller
                     'total' => $total,
                     'accepted' => $accepted,
                     'revision' => $revision,
+                    'rejected' => $rejected,
                     'pending' => $pending,
                 ],
                 'programs' => $programs,

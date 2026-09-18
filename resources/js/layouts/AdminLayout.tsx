@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, LayoutDashboard, Users, FileCheck, School, BookOpen, Newspaper, Image, Settings as SettingsIcon, LogOut, Globe, Sliders, ArrowLeft } from 'lucide-react';
+import { Menu, X, LayoutDashboard, Users, FileCheck, School, BookOpen, Newspaper, Image, HelpCircle, Settings as SettingsIcon, LogOut, Globe, Sliders, ArrowLeft } from 'lucide-react';
 import { cmsApi } from '../services/api';
 
 export default function AdminLayout() {
@@ -47,6 +47,7 @@ export default function AdminLayout() {
         { path: '/admin/cms/program', label: 'CMS Program', icon: BookOpen },
         { path: '/admin/cms/berita', label: 'CMS Berita', icon: Newspaper },
         { path: '/admin/cms/galeri', label: 'CMS Galeri', icon: Image },
+        { path: '/admin/cms/faq', label: 'CMS FAQ', icon: HelpCircle },
         { path: '/admin/settings', label: 'Pengaturan', icon: SettingsIcon },
     ];
 

@@ -12,7 +12,7 @@ interface Applicant {
     gender: 'L' | 'P';
     program: { name: string; code: string };
     parents: { name: string; type: string }[];
-    status: 'pending' | 'revision' | 'accepted';
+    status: 'pending' | 'revision' | 'accepted' | 'rejected';
     created_at: string;
 }
 
@@ -64,6 +64,18 @@ export default function Pendaftar() {
     useEffect(() => {
         fetchApplicants();
     }, [search, status, programId, page]);
+
+    // Lock background body scroll when delete modal is open
+    useEffect(() => {
+        if (deleteId !== null) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [deleteId]);
 
     // Format dates
     const formatDate = (dateStr: string) => {
@@ -121,10 +133,17 @@ export default function Pendaftar() {
                 </span>
             );
         }
-        if (statusVal === 'revision') {
+        if (statusVal === 'rejected') {
             return (
                 <span className="inline-flex items-center px-2.5 py-0.5 bg-rose-50 text-rose-700 border border-rose-100 text-[10px] font-bold rounded-full uppercase tracking-wider">
                     Ditolak
+                </span>
+            );
+        }
+        if (statusVal === 'revision') {
+            return (
+                <span className="inline-flex items-center px-2.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-100 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                    Perlu Revisi
                 </span>
             );
         }
@@ -164,7 +183,8 @@ export default function Pendaftar() {
                     >
                         <option value="all">Semua Status</option>
                         <option value="pending">Menunggu Verifikasi</option>
-                        <option value="revision">Ditolak / Revisi</option>
+                        <option value="revision">Perlu Revisi</option>
+                        <option value="rejected">Ditolak</option>
                         <option value="accepted">Diterima</option>
                     </select>
 

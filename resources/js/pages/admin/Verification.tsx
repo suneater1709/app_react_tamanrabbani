@@ -47,7 +47,7 @@ interface Dossier {
     religion: string;
     address: string;
     previous_school: string | null;
-    status: 'pending' | 'revision' | 'accepted';
+    status: 'pending' | 'revision' | 'accepted' | 'rejected';
     verifier_notes: string | null;
     created_at: string;
     program: Program;
@@ -151,6 +151,18 @@ export default function Verification() {
         }
     }, [location.state]);
 
+    // Lock background body scroll when preview modal is open
+    useEffect(() => {
+        if (previewDoc) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [previewDoc]);
+
     // Fetch left-side list
     const fetchList = () => {
         setListLoading(true);
@@ -235,14 +247,15 @@ export default function Verification() {
     // Helper: Map status labels
     const getStatusBadge = (status: string) => {
         if (status === 'accepted') return 'bg-emerald-100 text-emerald-800 border-emerald-300';
-        if (status === 'revision' || status === 'rejected') return 'bg-rose-100 text-rose-800 border-rose-300';
+        if (status === 'rejected') return 'bg-rose-100 text-rose-800 border-rose-300';
+        if (status === 'revision') return 'bg-purple-100 text-purple-800 border-purple-300';
         return 'bg-amber-100 text-amber-800 border-amber-300';
     };
 
     const getStatusText = (status: string) => {
         if (status === 'accepted') return 'Diterima';
-        if (status === 'revision') return 'Revisi';
         if (status === 'rejected') return 'Ditolak';
+        if (status === 'revision') return 'Revisi';
         return 'Pending';
     };
 
@@ -273,11 +286,12 @@ export default function Verification() {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-600 bg-white focus:ring-1 focus:ring-teal-500/20 focus:border-teal-500"
+                        className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-600 bg-white focus:ring-1 focus:ring-teal-500/20 focus:border-teal-500 cursor-pointer"
                     >
                         <option value="all">Semua Status</option>
                         <option value="pending">Pending</option>
                         <option value="revision">Revisi</option>
+                        <option value="rejected">Ditolak</option>
                         <option value="accepted">Diterima</option>
                     </select>
                 </div>
@@ -451,6 +465,7 @@ export default function Verification() {
                                         >
                                             <option value="pending">Belum Diproses (Pending)</option>
                                             <option value="revision">Kembalikan untuk Revisi Berkas</option>
+                                            <option value="rejected">Tolak Pendaftaran (Ditolak)</option>
                                             <option value="accepted">Terima Pendaftaran</option>
                                         </select>
                                     </div>

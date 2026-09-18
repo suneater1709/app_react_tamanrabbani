@@ -27,6 +27,7 @@ import AdminCmsProfile from './pages/admin/cms/Profile';
 import AdminCmsProgram from './pages/admin/cms/Program';
 import AdminCmsNews from './pages/admin/cms/News';
 import AdminCmsGallery from './pages/admin/cms/Gallery';
+import AdminCmsFaq from './pages/admin/cms/Faq';
 import AdminExport from './pages/admin/Export';
 import AdminGoogleSheet from './pages/admin/GoogleSheet';
 import AdminSettings from './pages/admin/Settings';
@@ -65,6 +66,7 @@ export default function AppRoot() {
                     <Route path="cms/program" element={<AdminCmsProgram />} />
                     <Route path="cms/berita" element={<AdminCmsNews />} />
                     <Route path="cms/galeri" element={<AdminCmsGallery />} />
+                    <Route path="cms/faq" element={<AdminCmsFaq />} />
                     <Route path="export" element={<AdminExport />} />
                     <Route path="google-sheet" element={<AdminGoogleSheet />} />
                     <Route path="settings" element={<AdminSettings />} />
