@@ -72,7 +72,7 @@ class VerificationController extends Controller
     public function updateStatus(Request $request, int $id): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,revision,accepted',
+            'status' => 'required|in:pending,revision,accepted,rejected',
             'notes' => 'required|string|min:5',
         ], [
             'status.required' => 'Status verifikasi wajib ditentukan.',

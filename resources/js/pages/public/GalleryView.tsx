@@ -30,6 +30,18 @@ export default function GalleryView() {
             .finally(() => setLoading(false));
     }, [activeTab]);
 
+    // Lock background body scroll when lightbox modal is open
+    useEffect(() => {
+        if (lightboxImage) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [lightboxImage]);
+
     const tabs = [
         { key: 'all', label: 'Semua' },
         { key: 'fasilitas', label: 'Fasilitas' },

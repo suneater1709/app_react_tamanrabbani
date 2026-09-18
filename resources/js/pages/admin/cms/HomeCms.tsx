@@ -66,6 +66,18 @@ export default function HomeCms() {
         fetchData();
     }, []);
 
+    // Lock background body scroll when modal is open
+    useEffect(() => {
+        if (sliderModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [sliderModalOpen]);
+
     // Helper: Extract YouTube ID
     const getYouTubeEmbedUrl = (url: string) => {
         if (!url) return '';

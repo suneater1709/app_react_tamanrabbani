@@ -34,15 +34,24 @@ class NewsController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'content_type' => 'nullable|in:image,file,link',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
+            'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'pdf_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'external_link' => 'nullable|url|max:500',
             'is_published' => 'required|boolean',
             'seo_title' => 'nullable|string|max:255',
             'seo_description' => 'nullable|string|max:500',
         ], [
             'title.required' => 'Judul berita wajib diisi.',
             'content.required' => 'Isi berita wajib diisi.',
-            'image.image' => 'Cover harus berupa gambar.',
-            'image.max' => 'Ukuran cover tidak boleh melebihi 2MB.',
+            'image.image' => 'Cover harus berupa berkas gambar.',
+            'image.max' => 'Ukuran cover tidak boleh melebihi 3MB.',
+            'file.mimes' => 'File dokumen harus berupa PDF, DOC, atau DOCX.',
+            'file.max' => 'Ukuran dokumen tidak boleh melebihi 10MB.',
+            'pdf_file.mimes' => 'File dokumen harus berupa PDF, DOC, atau DOCX.',
+            'pdf_file.max' => 'Ukuran dokumen tidak boleh melebihi 10MB.',
+            'external_link.url' => 'Format tautan eksternal harus berupa URL yang valid (diawali http/https).',
         ]);
 
         if ($validator->fails()) {
@@ -52,7 +61,8 @@ class NewsController extends Controller
             ], 422);
         }
 
-        $data = $request->only(['title', 'content', 'is_published', 'seo_title', 'seo_description']);
+        $data = $request->only(['title', 'content', 'content_type', 'external_link', 'is_published', 'seo_title', 'seo_description']);
+        $data['content_type'] = $data['content_type'] ?? 'image';
 
         // Generate Unique Slug
         $slug = Str::slug($request->title);
@@ -62,8 +72,14 @@ class NewsController extends Controller
         // Handle Image Upload
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
             $path = $request->file('image')->store('news', 'public');
-            // Save filename only or relative path
             $data['image'] = $path;
+        }
+
+        // Handle File Document Upload (support both file and pdf_file input names)
+        $docUpload = $request->file('file') ?? $request->file('pdf_file');
+        if ($docUpload && $docUpload->isValid()) {
+            $filePath = $docUpload->store('news_docs', 'public');
+            $data['file_path'] = $filePath;
         }
 
         $news = News::create($data);
@@ -122,13 +138,24 @@ class NewsController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'content_type' => 'nullable|in:image,file,link',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
+            'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'pdf_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'external_link' => 'nullable|url|max:500',
             'is_published' => 'required|boolean',
             'seo_title' => 'nullable|string|max:255',
             'seo_description' => 'nullable|string|max:500',
         ], [
             'title.required' => 'Judul berita wajib diisi.',
             'content.required' => 'Isi berita wajib diisi.',
+            'image.image' => 'Cover harus berupa berkas gambar.',
+            'image.max' => 'Ukuran cover tidak boleh melebihi 3MB.',
+            'file.mimes' => 'File dokumen harus berupa PDF, DOC, atau DOCX.',
+            'file.max' => 'Ukuran dokumen tidak boleh melebihi 10MB.',
+            'pdf_file.mimes' => 'File dokumen harus berupa PDF, DOC, atau DOCX.',
+            'pdf_file.max' => 'Ukuran dokumen tidak boleh melebihi 10MB.',
+            'external_link.url' => 'Format tautan eksternal harus berupa URL yang valid (diawali http/https).',
         ]);
 
         if ($validator->fails()) {
@@ -138,7 +165,10 @@ class NewsController extends Controller
             ], 422);
         }
 
-        $data = $request->only(['title', 'content', 'is_published', 'seo_title', 'seo_description']);
+        $data = $request->only(['title', 'content', 'content_type', 'external_link', 'is_published', 'seo_title', 'seo_description']);
+        if (! isset($data['content_type'])) {
+            $data['content_type'] = $news->content_type ?? 'image';
+        }
 
         // Update Slug if title changed
         if ($news->title !== $request->title) {
@@ -155,6 +185,16 @@ class NewsController extends Controller
             }
             $path = $request->file('image')->store('news', 'public');
             $data['image'] = $path;
+        }
+
+        // Handle File Document Upload
+        $docUpload = $request->file('file') ?? $request->file('pdf_file');
+        if ($docUpload && $docUpload->isValid()) {
+            if ($news->file_path) {
+                Storage::disk('public')->delete($news->file_path);
+            }
+            $filePath = $docUpload->store('news_docs', 'public');
+            $data['file_path'] = $filePath;
         }
 
         $news->update($data);

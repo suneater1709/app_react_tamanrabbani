@@ -16,7 +16,7 @@ class ProfileController extends Controller
      */
     public function index(): JsonResponse
     {
-        $keys = ['history', 'vision', 'mission', 'welcome_message'];
+        $keys = ['history', 'vision', 'mission', 'welcome_message', 'goals', 'grad_competencies'];
         $profiles = [];
 
         foreach ($keys as $key) {
@@ -40,6 +40,8 @@ class ProfileController extends Controller
             'vision' => 'required|string',
             'mission' => 'required|string',
             'welcome_message' => 'required|string',
+            'goals' => 'nullable|string',
+            'grad_competencies' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -50,12 +52,12 @@ class ProfileController extends Controller
         }
 
         $adminUser = $request->user();
-        $keys = ['history', 'vision', 'mission', 'welcome_message'];
+        $keys = ['history', 'vision', 'mission', 'welcome_message', 'goals', 'grad_competencies'];
 
         foreach ($keys as $key) {
             SchoolProfile::updateOrCreate(
                 ['key' => $key],
-                ['value' => $request->input($key)]
+                ['value' => $request->input($key, '')]
             );
         }
 
@@ -63,7 +65,7 @@ class ProfileController extends Controller
         ActivityLog::create([
             'user_id' => $adminUser->id,
             'action' => 'update_profile_cms',
-            'description' => 'Updated school profile details (history, vision, mission, and welcome message).',
+            'description' => 'Updated school profile details (history, vision, mission, welcome message, goals, and grad competencies).',
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);

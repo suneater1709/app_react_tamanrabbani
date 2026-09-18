@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Calendar, Sparkles, Heart, CheckCircle2, ChevronRight, ChevronLeft, Award, Camera, Image as ImageIcon, Play } from 'lucide-react';
 import { cmsApi } from '../../services/api';
+import CurriculumSection from '../../components/CurriculumSection';
 
 interface AnnouncementItem {
     id: number;
@@ -490,6 +491,11 @@ export default function Home() {
                                 </div>
                             </motion.div>
                         ))}
+                    </div>
+
+                    {/* 5 Kategori Kurikulum & Pembiasaan Terpadu */}
+                    <div className="mt-16">
+                        <CurriculumSection />
                     </div>
 
                 </div>

@@ -29,7 +29,7 @@ return new class extends Migration
             $table->string('religion')->default('Islam');
             $table->text('address');
             $table->string('previous_school')->nullable();
-            $table->enum('status', ['pending', 'revision', 'accepted'])->default('pending');
+            $table->enum('status', ['pending', 'revision', 'accepted', 'rejected'])->default('pending');
             $table->text('verifier_notes')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();

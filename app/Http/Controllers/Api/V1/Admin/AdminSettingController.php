@@ -120,6 +120,7 @@ class AdminSettingController extends Controller
             'ppdb_is_open',
             'ppdb_form_fee',
             'ppdb_waves',
+            'ppdb_fee_structure',
         ])->pluck('value', 'key');
 
         $defaultWaves = [
@@ -149,10 +150,37 @@ class AdminSettingController extends Controller
             ],
         ];
 
+        $defaultFees = [
+            'kb' => [
+                'name' => 'Kelompok Bermain (KB)',
+                'items' => [
+                    ['name' => 'Infaq Pendidikan', 'amount' => 550000],
+                    ['name' => 'Perlengkapan (1 tahun)', 'amount' => 850000],
+                    ['name' => 'Kegiatan (1 tahun)', 'amount' => 1000000],
+                    ['name' => 'Seragam', 'amount' => 400000],
+                ],
+            ],
+            'tk' => [
+                'name' => 'Taman Kanak-Kanak (TK A & TK B)',
+                'items' => [
+                    ['name' => 'Infaq Pendidikan (2 tahun)', 'amount' => 750000],
+                    ['name' => 'Perlengkapan (1 tahun)', 'amount' => 1050000],
+                    ['name' => 'Kegiatan (1 tahun)', 'amount' => 1500000],
+                    ['name' => 'Seragam', 'amount' => 650000],
+                ],
+            ],
+        ];
+
         $rawWaves = $settings->get('ppdb_waves');
         $waves = $rawWaves ? json_decode($rawWaves, true) : $defaultWaves;
         if (! is_array($waves)) {
             $waves = $defaultWaves;
+        }
+
+        $rawFees = $settings->get('ppdb_fee_structure');
+        $fees = $rawFees ? json_decode($rawFees, true) : $defaultFees;
+        if (! is_array($fees)) {
+            $fees = $defaultFees;
         }
 
         return response()->json([
@@ -163,12 +191,13 @@ class AdminSettingController extends Controller
                 'ppdb_is_open' => filter_var($settings->get('ppdb_is_open', '1'), FILTER_VALIDATE_BOOLEAN),
                 'ppdb_form_fee' => $settings->get('ppdb_form_fee', 'Rp 100.000'),
                 'ppdb_waves' => $waves,
+                'ppdb_fee_structure' => $fees,
             ],
         ]);
     }
 
     /**
-     * Update PPDB schedule, wave, and badge settings.
+     * Update PPDB schedule, wave, fee structure, and badge settings.
      */
     public function updatePpdbSettings(Request $request): JsonResponse
     {
@@ -184,6 +213,7 @@ class AdminSettingController extends Controller
             'ppdb_waves.*.badge' => 'nullable|string|max:100',
             'ppdb_waves.*.note' => 'nullable|string|max:255',
             'ppdb_waves.*.is_active' => 'nullable|boolean',
+            'ppdb_fee_structure' => 'nullable|array',
         ]);
 
         if (array_key_exists('ppdb_badge_text', $validated)) {
@@ -200,6 +230,9 @@ class AdminSettingController extends Controller
         }
         if (array_key_exists('ppdb_waves', $validated)) {
             Setting::updateOrCreate(['key' => 'ppdb_waves'], ['value' => json_encode($validated['ppdb_waves'])]);
+        }
+        if (array_key_exists('ppdb_fee_structure', $validated)) {
+            Setting::updateOrCreate(['key' => 'ppdb_fee_structure'], ['value' => json_encode($validated['ppdb_fee_structure'])]);
         }
 
         return $this->getPpdbSettings();

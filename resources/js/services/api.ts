@@ -23,6 +23,7 @@ export const cmsApi = {
     getSettings: () => api.get('/public/settings').then(res => res.data),
     getHomeData: () => api.get('/public/cms/home').then(res => res.data),
     getPrograms: () => api.get('/public/programs').then(res => res.data),
+    getCurriculumPrograms: () => api.get('/public/curriculum-programs').then(res => res.data),
     getFaqs: () => api.get('/public/cms/faqs').then(res => res.data),
     getNews: (page = 1) => api.get(`/public/cms/news?page=${page}`).then(res => res.data),
     getNewsDetail: (slug: string) => api.get(`/public/cms/news/${slug}`).then(res => res.data),
@@ -53,6 +54,18 @@ export const adminApi = {
     updateProgram: (id: number, data: any) => api.put(`/admin/cms/programs/${id}`, data).then(res => res.data),
     deleteProgram: (id: number) => api.delete(`/admin/cms/programs/${id}`).then(res => res.data),
 
+    // CMS Curriculum Programs (5 Categories)
+    getCurriculumPrograms: (category?: string) => api.get('/admin/cms/curriculum-programs', { params: { category } }).then(res => res.data),
+    createCurriculumProgram: (data: any) => api.post('/admin/cms/curriculum-programs', data).then(res => res.data),
+    updateCurriculumProgram: (id: number, data: any) => api.put(`/admin/cms/curriculum-programs/${id}`, data).then(res => res.data),
+    deleteCurriculumProgram: (id: number) => api.delete(`/admin/cms/curriculum-programs/${id}`).then(res => res.data),
+
+    // CMS Extracurriculars (KB & TK)
+    getExtracurriculars: (level?: string) => api.get('/admin/cms/extracurriculars', { params: { level } }).then(res => res.data),
+    createExtracurricular: (data: any) => api.post('/admin/cms/extracurriculars', data).then(res => res.data),
+    updateExtracurricular: (id: number, data: any) => api.put(`/admin/cms/extracurriculars/${id}`, data).then(res => res.data),
+    deleteExtracurricular: (id: number) => api.delete(`/admin/cms/extracurriculars/${id}`).then(res => res.data),
+
     // CMS News
     getAdminNews: (page = 1) => api.get(`/admin/cms/news?page=${page}`).then(res => res.data),
     createNews: (data: FormData) => api.post('/admin/cms/news', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(res => res.data),
@@ -70,6 +83,12 @@ export const adminApi = {
         return api.post(`/admin/cms/gallery/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(res => res.data);
     },
     deleteGallery: (id: number) => api.delete(`/admin/cms/gallery/${id}`).then(res => res.data),
+
+    // CMS FAQ
+    getAdminFaqs: (params?: any) => api.get('/admin/cms/faqs', { params }).then(res => res.data),
+    createFaq: (data: any) => api.post('/admin/cms/faqs', data).then(res => res.data),
+    updateFaq: (id: number, data: any) => api.put(`/admin/cms/faqs/${id}`, data).then(res => res.data),
+    deleteFaq: (id: number) => api.delete(`/admin/cms/faqs/${id}`).then(res => res.data),
     
     // PPDB Settings & Waves
     getPpdbSettings: () => api.get('/admin/settings/ppdb').then(res => res.data),

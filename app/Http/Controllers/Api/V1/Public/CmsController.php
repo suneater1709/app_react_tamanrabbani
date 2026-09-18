@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Public;
 
 use App\Http\Controllers\Controller;
+use App\Models\Tenant\CurriculumProgram;
+use App\Models\Tenant\Extracurricular;
 use App\Models\Tenant\Gallery;
 use App\Models\Tenant\Program;
 use App\Models\Tenant\Setting;
@@ -46,6 +48,29 @@ class CmsController extends Controller
         return response()->json([
             'success' => true,
             'data' => $programs,
+        ]);
+    }
+
+    /**
+     * Get 5-category curriculum programs and extracurriculars.
+     */
+    public function curriculumPrograms(): JsonResponse
+    {
+        $programs = CurriculumProgram::where('is_active', true)
+            ->orderBy('order', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $extracurriculars = Extracurricular::orderBy('order', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'programs' => $programs,
+                'extracurriculars' => $extracurriculars,
+            ],
         ]);
     }
 
@@ -145,10 +170,37 @@ class CmsController extends Controller
             ],
         ];
 
+        $defaultFees = [
+            'kb' => [
+                'name' => 'Kelompok Bermain (KB)',
+                'items' => [
+                    ['name' => 'Infaq Pendidikan', 'amount' => 550000],
+                    ['name' => 'Perlengkapan (1 tahun)', 'amount' => 850000],
+                    ['name' => 'Kegiatan (1 tahun)', 'amount' => 1000000],
+                    ['name' => 'Seragam', 'amount' => 400000],
+                ],
+            ],
+            'tk' => [
+                'name' => 'Taman Kanak-Kanak (TK A & TK B)',
+                'items' => [
+                    ['name' => 'Infaq Pendidikan (2 tahun)', 'amount' => 750000],
+                    ['name' => 'Perlengkapan (1 tahun)', 'amount' => 1050000],
+                    ['name' => 'Kegiatan (1 tahun)', 'amount' => 1500000],
+                    ['name' => 'Seragam', 'amount' => 650000],
+                ],
+            ],
+        ];
+
         $rawWaves = $settings->get('ppdb_waves');
         $waves = $rawWaves ? json_decode($rawWaves, true) : $defaultWaves;
         if (! is_array($waves)) {
             $waves = $defaultWaves;
+        }
+
+        $rawFees = $settings->get('ppdb_fee_structure');
+        $fees = $rawFees ? json_decode($rawFees, true) : $defaultFees;
+        if (! is_array($fees)) {
+            $fees = $defaultFees;
         }
 
         $logoUrl = null;
@@ -175,6 +227,7 @@ class CmsController extends Controller
                 'ppdb_is_open' => filter_var($settings->get('ppdb_is_open', '1'), FILTER_VALIDATE_BOOLEAN),
                 'ppdb_form_fee' => $settings->get('ppdb_form_fee', 'Rp 100.000'),
                 'ppdb_waves' => $waves,
+                'ppdb_fee_structure' => $fees,
             ],
         ]);
     }

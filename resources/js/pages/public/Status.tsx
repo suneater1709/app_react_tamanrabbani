@@ -24,7 +24,7 @@ interface TrackData {
     program: string;
     program_code: string;
     created_at: string;
-    status: 'pending' | 'revision' | 'accepted';
+    status: 'pending' | 'revision' | 'accepted' | 'rejected';
     verifier_notes: string | null;
     timeline: TimelineItem[];
 }
@@ -69,9 +69,10 @@ export default function Status() {
     };
 
     const getStatusStyle = (status: string) => {
-        if (status === 'accepted') return 'bg-emerald-100 text-emerald-800 border border-emerald-300'; // hijau = diterima
-        if (status === 'revision' || status === 'rejected') return 'bg-rose-100 text-rose-800 border border-rose-300'; // merah = revisi
-        return 'bg-amber-100 text-amber-800 border border-amber-300'; // kuning = pending
+        if (status === 'accepted') return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+        if (status === 'rejected') return 'bg-rose-100 text-rose-800 border border-rose-300';
+        if (status === 'revision') return 'bg-purple-100 text-purple-800 border border-purple-300';
+        return 'bg-amber-100 text-amber-800 border border-amber-300'; // pending
     };
 
     const getStatusLabel = (status: string) => {

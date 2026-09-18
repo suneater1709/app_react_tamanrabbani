@@ -7,6 +7,7 @@ interface SummaryData {
     total: number;
     accepted: number;
     revision: number;
+    rejected?: number;
     pending: number;
 }
 
@@ -22,7 +23,7 @@ interface Registration {
     registration_number: string;
     full_name: string;
     program: string;
-    status: 'pending' | 'revision' | 'accepted';
+    status: 'pending' | 'revision' | 'accepted' | 'rejected';
     created_at: string;
 }
 
@@ -35,7 +36,7 @@ interface Activity {
 }
 
 export default function Dashboard() {
-    const [summary, setSummary] = useState<SummaryData>({ total: 0, accepted: 0, revision: 0, pending: 0 });
+    const [summary, setSummary] = useState<SummaryData>({ total: 0, accepted: 0, revision: 0, rejected: 0, pending: 0 });
     const [programs, setPrograms] = useState<ProgramStat[]>([]);
     const [registrations, setRegistrations] = useState<Registration[]>([]);
     const [activities, setActivities] = useState<Activity[]>([]);
@@ -58,7 +59,8 @@ export default function Dashboard() {
     // Helper: Map status colors
     const getStatusStyle = (status: string) => {
         if (status === 'accepted') return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
-        if (status === 'revision' || status === 'rejected') return 'bg-rose-100 text-rose-800 border border-rose-300';
+        if (status === 'rejected') return 'bg-rose-100 text-rose-800 border border-rose-300';
+        if (status === 'revision') return 'bg-purple-100 text-purple-800 border border-purple-300';
         return 'bg-amber-100 text-amber-800 border border-amber-300'; // pending
     };
 
@@ -74,19 +76,20 @@ export default function Dashboard() {
     return (
         <div className="space-y-8">
             {/* 1. Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
                 {[
                     { label: 'Total Pendaftar', value: summary.total, icon: <Users size={22} />, color: 'bg-slate-900 text-white' },
-                    { label: 'Belum Diverifikasi (Pending)', value: summary.pending, icon: <Clock size={22} />, color: 'bg-blue-600 text-white' },
-                    { label: 'Perlu Revisi', value: summary.revision, icon: <FileEdit size={22} />, color: 'bg-amber-500 text-white' },
+                    { label: 'Belum Diverifikasi', value: summary.pending, icon: <Clock size={22} />, color: 'bg-blue-600 text-white' },
+                    { label: 'Perlu Revisi', value: summary.revision, icon: <FileEdit size={22} />, color: 'bg-purple-600 text-white' },
+                    { label: 'Ditolak', value: summary.rejected || 0, icon: <FileEdit size={22} />, color: 'bg-rose-600 text-white' },
                     { label: 'Diterima', value: summary.accepted, icon: <CheckCircle2 size={22} />, color: 'bg-emerald-600 text-white' },
                 ].map((card, idx) => (
-                    <div key={idx} className="bg-white rounded-xl border border-slate-200/60 p-6 shadow-sm flex items-center justify-between">
+                    <div key={idx} className="bg-white rounded-xl border border-slate-200/60 p-5 sm:p-6 shadow-sm flex items-center justify-between">
                         <div>
-                            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">{card.label}</span>
-                            <span className="text-3xl font-display font-extrabold text-slate-800">{card.value}</span>
+                            <span className="text-xxs font-semibold text-slate-400 uppercase tracking-wider block mb-1">{card.label}</span>
+                            <span className="text-2xl sm:text-3xl font-display font-extrabold text-slate-800">{card.value}</span>
                         </div>
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${card.color} shadow-sm`}>
+                        <div className={`w-11 h-11 rounded-lg flex items-center justify-center ${card.color} shadow-sm flex-shrink-0`}>
                             {card.icon}
                         </div>
                     </div>
