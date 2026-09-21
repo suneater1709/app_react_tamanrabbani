@@ -1,15 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    Menu, X, Home, Users, GraduationCap, FileText, 
+    Search, Newspaper, Image, HelpCircle, Phone, ArrowRight, Sparkles
+} from 'lucide-react';
 import { cmsApi } from '../services/api';
 
 export default function PublicLayout() {
     const location = useLocation();
     const [logoLanding, setLogoLanding] = useState<string | null>(null);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settings, setSettings] = useState<any>({
         school_address: 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo',
         school_phone: '087752439572',
         school_email: 'tamanrobbani23@gmail.com',
     });
+
+    // Auto-close mobile menu on route change
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [location.pathname]);
 
     useEffect(() => {
         cmsApi.getSettings()
@@ -28,57 +39,61 @@ export default function PublicLayout() {
     }, []);
 
     const navLinks = [
-        { path: '/', label: 'Beranda' },
-        { path: '/profil', label: 'Profil' },
-        { path: '/program', label: 'Program' },
-        { path: '/ppdb', label: 'PPDB' },
-        { path: '/cek-status', label: 'Cek Status' },
-        { path: '/berita', label: 'Berita' },
-        { path: '/galeri', label: 'Galeri' },
-        { path: '/faq', label: 'FAQ' },
-        { path: '/kontak', label: 'Kontak' },
+        { path: '/', label: 'Beranda', icon: Home },
+        { path: '/profil', label: 'Profil', icon: Users },
+        { path: '/program', label: 'Program', icon: GraduationCap },
+        { path: '/ppdb', label: 'PPDB', icon: FileText },
+        { path: '/cek-status', label: 'Cek Status', icon: Search },
+        { path: '/berita', label: 'Berita', icon: Newspaper },
+        { path: '/galeri', label: 'Galeri', icon: Image },
+        { path: '/faq', label: 'FAQ', icon: HelpCircle },
+        { path: '/kontak', label: 'Kontak', icon: Phone },
     ];
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50 font-sans text-left">
             {/* Navbar Header */}
-            <header className="sticky top-0 z-50 bg-white shadow-sm border-none">
+            <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
+                    <div className="flex justify-between h-16 items-center gap-2">
                         {/* Logo */}
-                        <div className="flex-shrink-0 flex items-center gap-3">
+                        <Link to="/" className="flex-shrink-0 flex items-center gap-2.5 group">
                             {logoLanding ? (
                                 <img 
                                     src={logoLanding} 
                                     alt="Logo" 
-                                    className="h-10 object-contain" 
+                                    className="h-9 sm:h-10 object-contain" 
                                     onError={(e) => {
                                         (e.target as HTMLElement).style.display = 'none';
                                     }}
                                 />
                             ) : (
-                                <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold text-lg font-display">
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold text-base sm:text-lg font-display shadow-xs group-hover:bg-teal-700 transition">
                                     TR
                                 </div>
                             )}
-                            <div>
-                                <span className="font-display font-bold text-sm sm:text-md text-slate-800 block leading-tight">KB-TK IT Taman Robbani</span>
-                                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Sidoarjo</span>
+                            <div className="min-w-0">
+                                <span className="font-display font-extrabold text-xs sm:text-sm md:text-base text-slate-850 block leading-tight truncate">
+                                    KB-TK IT Taman Robbani
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">
+                                    Sidoarjo
+                                </span>
                             </div>
-                        </div>
+                        </Link>
 
-                        {/* Navigation Menu */}
-                        <nav className="hidden md:flex space-x-1">
+                        {/* Desktop Navigation Menu */}
+                        <nav className="hidden lg:flex items-center space-x-1">
                             {navLinks.map((link) => {
                                 const isActive = location.pathname === link.path;
                                 return (
                                     <Link
                                         key={link.path}
                                         to={link.path}
-                                        className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors ${
+                                        className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                                             isActive
-                                                ? 'bg-teal-50 text-teal-700'
-                                                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                                                ? 'bg-teal-50 text-teal-750 shadow-2xs'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                                         }`}
                                     >
                                         {link.label}
@@ -87,17 +102,83 @@ export default function PublicLayout() {
                             })}
                         </nav>
 
-                        {/* CTAs */}
+                        {/* Right CTAs & Mobile Hamburger Toggle */}
                         <div className="flex items-center gap-2">
+                            {/* CTA Button (Visible on Tablet & Desktop, hidden on small mobile to keep header clean) */}
                             <Link
                                 to="/ppdb"
-                                className="px-4 py-2 text-xs font-bold text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition shadow-xs cursor-pointer"
+                                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition shadow-xs whitespace-nowrap cursor-pointer hover:shadow-md"
                             >
-                                Daftar Sekarang
+                                <span>Daftar Sekarang</span>
+                                <ArrowRight size={13} />
                             </Link>
+
+                            {/* Mobile Menu Button (Hamburger) */}
+                            <button
+                                type="button"
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                className="lg:hidden p-2.5 rounded-xl text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors focus:outline-hidden cursor-pointer flex items-center gap-1.5"
+                                aria-label="Menu Navigasi"
+                            >
+                                <span className="text-xs font-bold text-slate-600 sm:hidden">
+                                    {mobileMenuOpen ? 'Tutup' : 'Menu'}
+                                </span>
+                                {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                            </button>
                         </div>
                     </div>
                 </div>
+
+                {/* Mobile Navigation Drawer / Dropdown */}
+                <AnimatePresence>
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="lg:hidden bg-white border-t border-slate-100 shadow-2xl overflow-hidden"
+                        >
+                            <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+                                {/* Navigation Links Grid (Clean & Easy to Tap) */}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {navLinks.map((link) => {
+                                        const Icon = link.icon;
+                                        const isActive = location.pathname === link.path;
+                                        return (
+                                            <Link
+                                                key={link.path}
+                                                to={link.path}
+                                                onClick={() => setMobileMenuOpen(false)}
+                                                className={`flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-xs font-bold transition-all ${
+                                                    isActive
+                                                        ? 'bg-teal-600 text-white shadow-md shadow-teal-600/25'
+                                                        : 'bg-slate-100/80 hover:bg-slate-200/80 text-slate-700'
+                                                }`}
+                                            >
+                                                <Icon size={16} className={isActive ? 'text-white' : 'text-teal-600'} />
+                                                <span>{link.label}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Primary PPDB Action in Mobile Menu */}
+                                <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+                                    <Link
+                                        to="/ppdb"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white text-center font-bold text-xs sm:text-sm rounded-2xl shadow-md shadow-teal-600/20 flex items-center justify-center gap-2 transition cursor-pointer"
+                                    >
+                                        <Sparkles size={15} />
+                                        <span>Daftar PPDB Online 2026/2027</span>
+                                        <ArrowRight size={14} />
+                                    </Link>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </header>
 
             {/* Page Content Outlet */}

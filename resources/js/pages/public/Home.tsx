@@ -232,16 +232,17 @@ export default function Home() {
                                 Selamat datang di <strong>KB-TK IT Taman Robbani</strong>. Kami menghadirkan pendidikan anak usia dini berbasis nilai-nilai Islami yang dipadukan dengan konsep bermain ramah anak yang merangsang kreativitas, akhlak, dan kemandirian sejak dini.
                             </p>
 
-                            <div className="flex flex-wrap gap-4 pt-4">
+                            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-3 sm:pt-4">
                                 <Link
                                     to="/ppdb"
-                                    className="px-8 py-3.5 bg-teal-600 hover:bg-teal-755 text-white font-bold rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center gap-2 text-sm md:text-base cursor-pointer transform hover:-translate-y-0.5"
+                                    className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl sm:rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer transform hover:-translate-y-0.5"
                                 >
-                                    Daftar Sekarang <ArrowRight size={18} />
+                                    <span>Daftar Sekarang</span>
+                                    <ArrowRight size={18} />
                                 </Link>
                                 <Link
                                     to="/ppdb"
-                                    className="px-8 py-3.5 bg-white text-slate-700 border border-slate-100 font-bold rounded-full transition-all duration-300 shadow-xs hover:bg-slate-50 text-sm md:text-base flex items-center justify-center cursor-pointer"
+                                    className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl sm:rounded-full transition-all duration-300 shadow-2xs hover:shadow-xs text-sm sm:text-base flex items-center justify-center cursor-pointer"
                                 >
                                     Informasi Pendaftaran
                                 </Link>
