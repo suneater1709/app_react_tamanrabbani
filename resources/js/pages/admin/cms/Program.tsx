@@ -3,7 +3,7 @@ import { adminApi } from '../../../services/api';
 import { scrollToTop } from '../../../lib/utils';
 import { 
     Plus, Edit2, Trash2, X, CheckCircle2, AlertCircle, Layers, Award, 
-    School, BookOpen, GraduationCap, HeartHandshake, Activity, Sparkles, Filter 
+    GraduationCap, Filter 
 } from 'lucide-react';
 
 interface ClassProgramItem {
@@ -96,17 +96,17 @@ export default function Program() {
                 const curData = Array.isArray(curRes?.data)
                     ? curRes.data
                     : (Array.isArray(curRes?.programs) ? curRes.programs : (Array.isArray(curRes?.data?.programs) ? curRes.data.programs : []));
-                setCurriculumList(curData);
+                setCurriculumList(curData.map((item: any) => ({ ...item, is_active: Boolean(item.is_active) })));
 
                 const extraData = Array.isArray(extraRes?.data)
                     ? extraRes.data
                     : (Array.isArray(curRes?.extracurriculars) ? curRes.extracurriculars : (Array.isArray(curRes?.data?.extracurriculars) ? curRes.data.extracurriculars : []));
-                setExtraList(extraData);
+                setExtraList(extraData.map((item: any) => ({ ...item, is_active: Boolean(item.is_active) })));
 
                 const clsData = Array.isArray(classRes?.data)
                     ? classRes.data
                     : (Array.isArray(classRes?.data?.data) ? classRes.data.data : []);
-                setClassList(clsData);
+                setClassList(clsData.map((item: any) => ({ ...item, is_active: Boolean(item.is_active) })));
             })
             .catch(err => {
                 console.error("Error loading program CMS data:", err);
@@ -137,6 +137,75 @@ export default function Program() {
         setSuccessMsg(msg);
         scrollToTop();
         setTimeout(() => setSuccessMsg(null), 3500);
+    };
+
+    // ==========================================
+    // OPTIMISTIC TOGGLE HANDLERS (1-CLICK)
+    // ==========================================
+    const handleToggleCurriculum = (id: number, currentStatus: boolean) => {
+        const nextStatus = !currentStatus;
+        setCurriculumList(prev => prev.map(item => item.id === id ? { ...item, is_active: nextStatus } : item));
+        
+        adminApi.toggleCurriculumProgram(id)
+            .then(res => {
+                if (res && res.success) {
+                    showSuccess(`Status kurikulum berhasil diubah ke ${nextStatus ? 'Aktif' : 'Nonaktif'}.`);
+                } else {
+                    setCurriculumList(prev => prev.map(item => item.id === id ? { ...item, is_active: currentStatus } : item));
+                    setErrorMsg('Gagal mengubah status kurikulum.');
+                    setTimeout(() => setErrorMsg(null), 3000);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                setCurriculumList(prev => prev.map(item => item.id === id ? { ...item, is_active: currentStatus } : item));
+                setErrorMsg('Gagal mengubah status kurikulum.');
+                setTimeout(() => setErrorMsg(null), 3000);
+            });
+    };
+
+    const handleToggleExtra = (id: number, currentStatus: boolean) => {
+        const nextStatus = !currentStatus;
+        setExtraList(prev => prev.map(item => item.id === id ? { ...item, is_active: nextStatus } : item));
+        
+        adminApi.toggleExtracurricular(id)
+            .then(res => {
+                if (res && res.success) {
+                    showSuccess(`Status ekstrakurikuler berhasil diubah ke ${nextStatus ? 'Aktif' : 'Nonaktif'}.`);
+                } else {
+                    setExtraList(prev => prev.map(item => item.id === id ? { ...item, is_active: currentStatus } : item));
+                    setErrorMsg('Gagal mengubah status ekstrakurikuler.');
+                    setTimeout(() => setErrorMsg(null), 3000);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                setExtraList(prev => prev.map(item => item.id === id ? { ...item, is_active: currentStatus } : item));
+                setErrorMsg('Gagal mengubah status ekstrakurikuler.');
+                setTimeout(() => setErrorMsg(null), 3000);
+            });
+    };
+
+    const handleToggleClass = (id: number, currentStatus: boolean) => {
+        const nextStatus = !currentStatus;
+        setClassList(prev => prev.map(item => item.id === id ? { ...item, is_active: nextStatus } : item));
+        
+        adminApi.toggleProgram(id)
+            .then(res => {
+                if (res && res.success) {
+                    showSuccess(`Status jenjang kelas berhasil diubah ke ${nextStatus ? 'Aktif' : 'Nonaktif'}.`);
+                } else {
+                    setClassList(prev => prev.map(item => item.id === id ? { ...item, is_active: currentStatus } : item));
+                    setErrorMsg('Gagal mengubah status jenjang kelas.');
+                    setTimeout(() => setErrorMsg(null), 3000);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                setClassList(prev => prev.map(item => item.id === id ? { ...item, is_active: currentStatus } : item));
+                setErrorMsg('Gagal mengubah status jenjang kelas.');
+                setTimeout(() => setErrorMsg(null), 3000);
+            });
     };
 
     // ==========================================
@@ -376,21 +445,21 @@ export default function Program() {
 
     const getCategoryBadge = (cat: string) => {
         const c = cat?.toLowerCase();
-        if (c === 'school' || c === 'sekolah') return <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xxs font-bold rounded-full">Sekolah</span>;
-        if (c === 'class' || c === 'kelas') return <span className="px-2.5 py-0.5 bg-teal-100 text-teal-800 text-xxs font-bold rounded-full">Kelas</span>;
-        if (c === 'akhlak') return <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xxs font-bold rounded-full">Akhlakul Karimah</span>;
-        if (c === 'quran') return <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xxs font-bold rounded-full">Al-Qur'an</span>;
-        if (c === 'uks') return <span className="px-2.5 py-0.5 bg-rose-100 text-rose-800 text-xxs font-bold rounded-full">UKS & Kesehatan</span>;
-        return <span className="px-2.5 py-0.5 bg-slate-100 text-slate-800 text-xxs font-bold rounded-full">{cat}</span>;
+        if (c === 'school' || c === 'sekolah') return <span className="px-2.5 py-0.5 bg-teal-50 text-teal-700 text-xxs font-bold rounded-full border border-teal-200/50">Sekolah</span>;
+        if (c === 'class' || c === 'kelas') return <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xxs font-bold rounded-full border border-blue-200/50">Kelas</span>;
+        if (c === 'akhlak') return <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-xxs font-bold rounded-full border border-emerald-200/50">Akhlakul Karimah</span>;
+        if (c === 'quran') return <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 text-xxs font-bold rounded-full border border-amber-200/50">Al-Qur'an</span>;
+        if (c === 'uks') return <span className="px-2.5 py-0.5 bg-rose-50 text-rose-700 text-xxs font-bold rounded-full border border-rose-200/50">UKS & Kesehatan</span>;
+        return <span className="px-2.5 py-0.5 bg-slate-50 text-slate-700 text-xxs font-bold rounded-full border border-slate-200/50">{cat}</span>;
     };
 
     return (
         <div className="space-y-6">
             {/* Top Navigation / Header */}
-            <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-sm space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200/60 p-6 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h2 className="text-xl font-bold text-slate-800">CMS Program Kurikulum & Ekstrakurikuler</h2>
+                        <h2 className="text-xl font-bold text-slate-800 tracking-tight">CMS Program Kurikulum & Ekstrakurikuler</h2>
                         <p className="text-slate-500 text-xs mt-1">
                             Kelola 5 Kategori Kurikulum Terpadu, Ekstrakurikuler Minat Bakat, dan Jenjang Kelas PPDB.
                         </p>
@@ -400,7 +469,7 @@ export default function Program() {
                         {mainTab === 'curriculum' && (
                             <button
                                 onClick={openCreateCurriculum}
-                                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
                             >
                                 <Plus size={15} /> Tambah Program Kurikulum
                             </button>
@@ -408,7 +477,7 @@ export default function Program() {
                         {mainTab === 'extra' && (
                             <button
                                 onClick={openCreateExtra}
-                                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
                             >
                                 <Plus size={15} /> Tambah Ekstrakurikuler
                             </button>
@@ -416,7 +485,7 @@ export default function Program() {
                         {mainTab === 'classes' && (
                             <button
                                 onClick={openCreateClass}
-                                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
                             >
                                 <Plus size={15} /> Tambah Jenjang Kelas
                             </button>
@@ -425,12 +494,12 @@ export default function Program() {
                 </div>
 
                 {/* Main Tabs */}
-                <div className="flex items-center gap-2 border-t pt-4">
+                <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
                     <button
                         onClick={() => setMainTab('curriculum')}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                             mainTab === 'curriculum'
-                                ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-600/30'
+                                ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-600/30 font-semibold'
                                 : 'text-slate-600 hover:bg-slate-50'
                         }`}
                     >
@@ -441,7 +510,7 @@ export default function Program() {
                         onClick={() => setMainTab('extra')}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                             mainTab === 'extra'
-                                ? 'bg-purple-50 text-purple-800 ring-1 ring-purple-600/30'
+                                ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-600/30 font-semibold'
                                 : 'text-slate-600 hover:bg-slate-50'
                         }`}
                     >
@@ -452,7 +521,7 @@ export default function Program() {
                         onClick={() => setMainTab('classes')}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                             mainTab === 'classes'
-                                ? 'bg-slate-100 text-slate-800 ring-1 ring-slate-400/30'
+                                ? 'bg-slate-100 text-slate-800 ring-1 ring-slate-400/30 font-semibold'
                                 : 'text-slate-600 hover:bg-slate-50'
                         }`}
                     >
@@ -463,15 +532,22 @@ export default function Program() {
             </div>
 
             {successMsg && (
-                <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-medium rounded-xl flex items-center gap-2">
-                    <CheckCircle2 size={18} />
+                <div className="p-4 bg-teal-50 border border-teal-100 text-teal-800 text-xs font-medium rounded-xl flex items-center gap-2 transition-all">
+                    <CheckCircle2 size={16} className="text-teal-600 shrink-0" />
                     <span>{successMsg}</span>
+                </div>
+            )}
+
+            {errorMsg && (
+                <div className="p-4 bg-rose-50 border border-rose-100 text-rose-700 text-xs font-medium rounded-xl flex items-center gap-2 transition-all">
+                    <AlertCircle size={16} className="text-rose-600 shrink-0" />
+                    <span>{errorMsg}</span>
                 </div>
             )}
 
             {/* TAB 1: 5 KATEGORI KURIKULUM */}
             {mainTab === 'curriculum' && (
-                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden space-y-4 p-6">
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xs overflow-hidden space-y-4 p-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2 overflow-x-auto pb-1">
                             <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
@@ -504,14 +580,14 @@ export default function Program() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50 text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100">
-                                    <th className="p-3 pl-4">No</th>
-                                    <th className="p-3">Kategori</th>
-                                    <th className="p-3">Judul Program</th>
-                                    <th className="p-3">Sasaran & Frekuensi</th>
-                                    <th className="p-3">Deskripsi</th>
-                                    <th className="p-3">Status</th>
-                                    <th className="p-3 pr-4 text-right">Aksi</th>
+                                <tr className="bg-slate-50/80 text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100">
+                                    <th className="py-3 px-4">No</th>
+                                    <th className="py-3 px-4">Kategori</th>
+                                    <th className="py-3 px-4">Judul Program</th>
+                                    <th className="py-3 px-4">Sasaran & Frekuensi</th>
+                                    <th className="py-3 px-4">Deskripsi</th>
+                                    <th className="py-3 px-4 text-center">Status</th>
+                                    <th className="py-3 px-4 text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -526,32 +602,49 @@ export default function Program() {
                                 ) : (
                                     filteredCurriculum.map((item, idx) => (
                                         <tr key={item.id} className="hover:bg-slate-50/60 transition">
-                                            <td className="p-3 pl-4 font-bold text-slate-400">{idx + 1}</td>
-                                            <td className="p-3">{getCategoryBadge(item.category)}</td>
-                                            <td className="p-3 font-bold text-slate-800">{item.title || (item as any).name}</td>
-                                            <td className="p-3 text-xxs text-slate-500 space-y-0.5">
+                                            <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
+                                            <td className="py-3.5 px-4">{getCategoryBadge(item.category)}</td>
+                                            <td className="py-3.5 px-4 font-bold text-slate-800">{item.title || (item as any).name}</td>
+                                            <td className="py-3.5 px-4 text-xxs text-slate-500 space-y-0.5">
                                                 {item.target_audience && <div>🎯 {item.target_audience}</div>}
                                                 {(item.frequency || (item as any).time_allocation) && <div>⏰ {item.frequency || (item as any).time_allocation}</div>}
+                                                {!item.target_audience && !(item.frequency || (item as any).time_allocation) && <span className="text-slate-300">-</span>}
                                             </td>
-                                            <td className="p-3 text-slate-500 max-w-xs truncate">{item.description || '-'}</td>
-                                            <td className="p-3">
-                                                <span className={`px-2 py-0.5 rounded-full text-xxs font-bold ${
-                                                    item.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
-                                                }`}>
-                                                    {item.is_active ? 'Aktif' : 'Nonaktif'}
-                                                </span>
+                                            <td className="py-3.5 px-4 text-slate-500 max-w-xs truncate">{item.description || '-'}</td>
+                                            <td className="py-3.5 px-4 text-center">
+                                                <div className="inline-flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleCurriculum(item.id, item.is_active)}
+                                                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                            item.is_active ? 'bg-teal-600' : 'bg-slate-300'
+                                                        }`}
+                                                        title={`Klik untuk ${item.is_active ? 'menonaktifkan' : 'mengaktifkan'}`}
+                                                    >
+                                                        <span
+                                                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                                item.is_active ? 'translate-x-4' : 'translate-x-0'
+                                                            }`}
+                                                        />
+                                                    </button>
+                                                    <span className={`text-xxs font-bold px-2 py-0.5 rounded-full ${
+                                                        item.is_active ? 'bg-teal-50 text-teal-700 border border-teal-200/50' : 'bg-slate-100 text-slate-500 border border-slate-200/50'
+                                                    }`}>
+                                                        {item.is_active ? 'Aktif' : 'Nonaktif'}
+                                                    </span>
+                                                </div>
                                             </td>
-                                            <td className="p-3 pr-4 text-right space-x-2">
+                                            <td className="py-3.5 px-4 text-right space-x-1">
                                                 <button
                                                     onClick={() => openEditCurriculum(item)}
-                                                    className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition"
+                                                    className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition cursor-pointer"
                                                     title="Edit"
                                                 >
                                                     <Edit2 size={14} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteCurriculum(item.id)}
-                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                                                     title="Hapus"
                                                 >
                                                     <Trash2 size={14} />
@@ -568,7 +661,7 @@ export default function Program() {
 
             {/* TAB 2: EKSTRAKURIKULER */}
             {mainTab === 'extra' && (
-                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden space-y-4 p-6">
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xs overflow-hidden space-y-4 p-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
@@ -584,7 +677,7 @@ export default function Program() {
                                     onClick={() => setExtraLevelFilter(lvl.id)}
                                     className={`px-3 py-1.5 rounded-lg text-xxs font-bold transition cursor-pointer ${
                                         extraLevelFilter === lvl.id
-                                            ? 'bg-purple-600 text-white'
+                                            ? 'bg-teal-600 text-white'
                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                                 >
@@ -598,14 +691,14 @@ export default function Program() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50 text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100">
-                                    <th className="p-3 pl-4">No</th>
-                                    <th className="p-3">Jenjang</th>
-                                    <th className="p-3">Nama Ekstrakurikuler</th>
-                                    <th className="p-3">Pembina & Jadwal</th>
-                                    <th className="p-3">Deskripsi</th>
-                                    <th className="p-3">Status</th>
-                                    <th className="p-3 pr-4 text-right">Aksi</th>
+                                <tr className="bg-slate-50/80 text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100">
+                                    <th className="py-3 px-4">No</th>
+                                    <th className="py-3 px-4">Jenjang</th>
+                                    <th className="py-3 px-4">Nama Ekstrakurikuler</th>
+                                    <th className="py-3 px-4">Pembina & Jadwal</th>
+                                    <th className="py-3 px-4">Deskripsi</th>
+                                    <th className="py-3 px-4 text-center">Status</th>
+                                    <th className="py-3 px-4 text-right">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -620,38 +713,57 @@ export default function Program() {
                                 ) : (
                                     filteredExtra.map((item, idx) => (
                                         <tr key={item.id} className="hover:bg-slate-50/60 transition">
-                                            <td className="p-3 pl-4 font-bold text-slate-400">{idx + 1}</td>
-                                            <td className="p-3">
-                                                <span className={`px-2.5 py-0.5 rounded-full text-xxs font-bold ${
-                                                    String(item.level).toLowerCase() === 'kb' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'
+                                            <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
+                                            <td className="py-3.5 px-4">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-xxs font-bold border ${
+                                                    String(item.level).toLowerCase() === 'kb' 
+                                                        ? 'bg-amber-50 text-amber-800 border-amber-200/50' 
+                                                        : 'bg-teal-50 text-teal-800 border-teal-200/50'
                                                 }`}>
                                                     {String(item.level).toLowerCase() === 'kb' ? 'Kelompok Bermain' : String(item.level).toLowerCase() === 'tk' ? 'Taman Kanak-Kanak' : 'Semua'}
                                                 </span>
                                             </td>
-                                            <td className="p-3 font-bold text-slate-800">{item.title || (item as any).name}</td>
-                                            <td className="p-3 text-xxs text-slate-500 space-y-0.5">
+                                            <td className="py-3.5 px-4 font-bold text-slate-800">{item.title || (item as any).name}</td>
+                                            <td className="py-3.5 px-4 text-xxs text-slate-500 space-y-0.5">
                                                 {item.instructor && <div>👤 {item.instructor}</div>}
                                                 {item.schedule && <div>⏰ {item.schedule}</div>}
+                                                {!item.instructor && !item.schedule && <span className="text-slate-300">-</span>}
                                             </td>
-                                            <td className="p-3 text-slate-500 max-w-xs truncate">{item.description || '-'}</td>
-                                            <td className="p-3">
-                                                <span className={`px-2 py-0.5 rounded-full text-xxs font-bold ${
-                                                    item.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
-                                                }`}>
-                                                    {item.is_active ? 'Aktif' : 'Nonaktif'}
-                                                </span>
+                                            <td className="py-3.5 px-4 text-slate-500 max-w-xs truncate">{item.description || '-'}</td>
+                                            <td className="py-3.5 px-4 text-center">
+                                                <div className="inline-flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleExtra(item.id, item.is_active)}
+                                                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                            item.is_active ? 'bg-teal-600' : 'bg-slate-300'
+                                                        }`}
+                                                        title={`Klik untuk ${item.is_active ? 'menonaktifkan' : 'mengaktifkan'}`}
+                                                    >
+                                                        <span
+                                                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                                item.is_active ? 'translate-x-4' : 'translate-x-0'
+                                                            }`}
+                                                        />
+                                                    </button>
+                                                    <span className={`text-xxs font-bold px-2 py-0.5 rounded-full ${
+                                                        item.is_active ? 'bg-teal-50 text-teal-700 border border-teal-200/50' : 'bg-slate-100 text-slate-500 border border-slate-200/50'
+                                                    }`}>
+                                                        {item.is_active ? 'Aktif' : 'Nonaktif'}
+                                                    </span>
+                                                </div>
                                             </td>
-                                            <td className="p-3 pr-4 text-right space-x-2">
+                                            <td className="py-3.5 px-4 text-right space-x-1">
                                                 <button
                                                     onClick={() => openEditExtra(item)}
-                                                    className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                                                    className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition cursor-pointer"
                                                     title="Edit"
                                                 >
                                                     <Edit2 size={14} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteExtra(item.id)}
-                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                                                     title="Hapus"
                                                 >
                                                     <Trash2 size={14} />
@@ -668,15 +780,15 @@ export default function Program() {
 
             {/* TAB 3: JENJANG KELAS PPDB */}
             {mainTab === 'classes' && (
-                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden p-6">
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xs overflow-hidden p-6">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100">
-                                <th className="p-3 pl-4">Kode</th>
-                                <th className="p-3">Nama Jenjang Kelas</th>
-                                <th className="p-3">Deskripsi</th>
-                                <th className="p-3">Status</th>
-                                <th className="p-3 pr-4 text-right">Aksi</th>
+                            <tr className="bg-slate-50/80 text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100">
+                                <th className="py-3 px-4">Kode</th>
+                                <th className="py-3 px-4">Nama Jenjang Kelas</th>
+                                <th className="py-3 px-4">Deskripsi</th>
+                                <th className="py-3 px-4 text-center">Status</th>
+                                <th className="py-3 px-4 text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -691,27 +803,43 @@ export default function Program() {
                             ) : (
                                 classList.map((item) => (
                                     <tr key={item.id} className="hover:bg-slate-50/60 transition">
-                                        <td className="p-3 pl-4 font-mono font-bold text-teal-700">{item.code}</td>
-                                        <td className="p-3 font-bold text-slate-800">{item.name}</td>
-                                        <td className="p-3 text-slate-500 max-w-sm truncate">{item.description || '-'}</td>
-                                        <td className="p-3">
-                                            <span className={`px-2 py-0.5 rounded-full text-xxs font-bold ${
-                                                item.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
-                                            }`}>
-                                                {item.is_active ? 'Aktif' : 'Nonaktif'}
-                                            </span>
+                                        <td className="py-3.5 px-4 font-mono font-bold text-teal-700">{item.code}</td>
+                                        <td className="py-3.5 px-4 font-bold text-slate-800">{item.name}</td>
+                                        <td className="py-3.5 px-4 text-slate-500 max-w-sm truncate">{item.description || '-'}</td>
+                                        <td className="py-3.5 px-4 text-center">
+                                            <div className="inline-flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleToggleClass(item.id, item.is_active)}
+                                                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                        item.is_active ? 'bg-teal-600' : 'bg-slate-300'
+                                                    }`}
+                                                    title={`Klik untuk ${item.is_active ? 'menonaktifkan' : 'mengaktifkan'}`}
+                                                >
+                                                    <span
+                                                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                                                            item.is_active ? 'translate-x-4' : 'translate-x-0'
+                                                        }`}
+                                                    />
+                                                </button>
+                                                <span className={`text-xxs font-bold px-2 py-0.5 rounded-full ${
+                                                    item.is_active ? 'bg-teal-50 text-teal-700 border border-teal-200/50' : 'bg-slate-100 text-slate-500 border border-slate-200/50'
+                                                }`}>
+                                                    {item.is_active ? 'Aktif' : 'Nonaktif'}
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td className="p-3 pr-4 text-right space-x-2">
+                                        <td className="py-3.5 px-4 text-right space-x-1">
                                             <button
                                                 onClick={() => openEditClass(item)}
-                                                className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition"
+                                                className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition cursor-pointer"
                                                 title="Edit"
                                             >
                                                 <Edit2 size={14} />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteClass(item.id)}
-                                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                                                 title="Hapus"
                                             >
                                                 <Trash2 size={14} />
@@ -729,11 +857,11 @@ export default function Program() {
             {curriculumModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
                     <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5">
-                        <div className="flex justify-between items-center border-b pb-3">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <h3 className="font-bold text-slate-800 text-base">
                                 {curriculumEditing ? 'Edit Program Kurikulum' : 'Tambah Program Kurikulum'}
                             </h3>
-                            <button onClick={() => setCurriculumModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                            <button onClick={() => setCurriculumModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                                 <X size={20} />
                             </button>
                         </div>
@@ -751,7 +879,7 @@ export default function Program() {
                                 <select
                                     value={curriculumForm.category}
                                     onChange={(e) => setCurriculumForm({ ...curriculumForm, category: e.target.value as any })}
-                                    className="w-full px-3 py-2 border rounded-xl"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                 >
                                     <option value="school">Program Sekolah</option>
                                     <option value="class">Program Kelas</option>
@@ -767,7 +895,7 @@ export default function Program() {
                                     type="text"
                                     value={curriculumForm.title}
                                     onChange={(e) => setCurriculumForm({ ...curriculumForm, title: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-xl"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                     placeholder="Contoh: Pembelajaran Tematik Terpadu"
                                     required
                                 />
@@ -780,7 +908,7 @@ export default function Program() {
                                         type="text"
                                         value={curriculumForm.target_audience}
                                         onChange={(e) => setCurriculumForm({ ...curriculumForm, target_audience: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-xl"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                         placeholder="Contoh: Semua Kelompok / TK-B"
                                     />
                                 </div>
@@ -790,7 +918,7 @@ export default function Program() {
                                         type="text"
                                         value={curriculumForm.frequency}
                                         onChange={(e) => setCurriculumForm({ ...curriculumForm, frequency: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-xl"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                         placeholder="Contoh: Setiap Hari / Per Semester"
                                     />
                                 </div>
@@ -802,7 +930,7 @@ export default function Program() {
                                     rows={3}
                                     value={curriculumForm.description}
                                     onChange={(e) => setCurriculumForm({ ...curriculumForm, description: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-xl"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                     placeholder="Penjelasan ringkas kegiatan..."
                                 />
                             </div>
@@ -813,25 +941,25 @@ export default function Program() {
                                     id="cur_active"
                                     checked={curriculumForm.is_active}
                                     onChange={(e) => setCurriculumForm({ ...curriculumForm, is_active: e.target.checked })}
-                                    className="rounded text-teal-600"
+                                    className="rounded text-teal-600 focus:ring-teal-500 h-4 w-4"
                                 />
                                 <label htmlFor="cur_active" className="font-semibold text-slate-700 cursor-pointer">
                                     Aktif dan Tampilkan di Halaman Program Public
                                 </label>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-4 border-t">
+                            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={() => setCurriculumModalOpen(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl"
+                                    className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl cursor-pointer disabled:opacity-50"
                                 >
                                     {saving ? 'Menyimpan...' : 'Simpan Program'}
                                 </button>
@@ -845,11 +973,11 @@ export default function Program() {
             {extraModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
                     <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5">
-                        <div className="flex justify-between items-center border-b pb-3">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <h3 className="font-bold text-slate-800 text-base">
                                 {extraEditing ? 'Edit Ekstrakurikuler' : 'Tambah Ekstrakurikuler'}
                             </h3>
-                            <button onClick={() => setExtraModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                            <button onClick={() => setExtraModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                                 <X size={20} />
                             </button>
                         </div>
@@ -860,7 +988,7 @@ export default function Program() {
                                 <select
                                     value={extraForm.level}
                                     onChange={(e) => setExtraForm({ ...extraForm, level: e.target.value as any })}
-                                    className="w-full px-3 py-2 border rounded-xl"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                 >
                                     <option value="tk">Jenjang TK (Taman Kanak-Kanak)</option>
                                     <option value="kb">Jenjang KB (Kelompok Bermain)</option>
@@ -874,7 +1002,7 @@ export default function Program() {
                                     type="text"
                                     value={extraForm.title}
                                     onChange={(e) => setExtraForm({ ...extraForm, title: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-xl"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                     placeholder="Contoh: Tahfidz Cilik Intensif"
                                     required
                                 />
@@ -887,7 +1015,7 @@ export default function Program() {
                                         type="text"
                                         value={extraForm.instructor}
                                         onChange={(e) => setExtraForm({ ...extraForm, instructor: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-xl"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                         placeholder="Contoh: Ustadz Pembina Tahfidz"
                                     />
                                 </div>
@@ -897,7 +1025,7 @@ export default function Program() {
                                         type="text"
                                         value={extraForm.schedule}
                                         onChange={(e) => setExtraForm({ ...extraForm, schedule: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-xl"
+                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                         placeholder="Contoh: Setiap Kamis (11.30 - 12.30)"
                                     />
                                 </div>
@@ -909,7 +1037,7 @@ export default function Program() {
                                     rows={3}
                                     value={extraForm.description}
                                     onChange={(e) => setExtraForm({ ...extraForm, description: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-xl"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                     placeholder="Penjelasan manfaat untuk perkembangan anak..."
                                 />
                             </div>
@@ -920,25 +1048,25 @@ export default function Program() {
                                     id="extra_active"
                                     checked={extraForm.is_active}
                                     onChange={(e) => setExtraForm({ ...extraForm, is_active: e.target.checked })}
-                                    className="rounded text-purple-600"
+                                    className="rounded text-teal-600 focus:ring-teal-500 h-4 w-4"
                                 />
                                 <label htmlFor="extra_active" className="font-semibold text-slate-700 cursor-pointer">
                                     Aktif dan Tampilkan di Website
                                 </label>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-4 border-t">
+                            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={() => setExtraModalOpen(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl"
+                                    className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl cursor-pointer disabled:opacity-50"
                                 >
                                     {saving ? 'Menyimpan...' : 'Simpan Ekstrakurikuler'}
                                 </button>
@@ -952,11 +1080,11 @@ export default function Program() {
             {classModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
                     <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5">
-                        <div className="flex justify-between items-center border-b pb-3">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                             <h3 className="font-bold text-slate-800 text-base">
                                 {classEditing ? 'Edit Jenjang Kelas' : 'Tambah Jenjang Kelas'}
                             </h3>
-                            <button onClick={() => setClassModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                            <button onClick={() => setClassModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                                 <X size={20} />
                             </button>
                         </div>
@@ -968,7 +1096,7 @@ export default function Program() {
                                     type="text"
                                     value={classForm.name}
                                     onChange={(e) => setClassForm({ ...classForm, name: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-xl"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                     placeholder="Contoh: Taman Kanak-Kanak A (TK-A)"
                                     required
                                 />
@@ -980,7 +1108,7 @@ export default function Program() {
                                     type="text"
                                     value={classForm.code}
                                     onChange={(e) => setClassForm({ ...classForm, code: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-xl"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                     placeholder="Contoh: TK-A / PG"
                                     required
                                 />
@@ -992,7 +1120,7 @@ export default function Program() {
                                     rows={3}
                                     value={classForm.description}
                                     onChange={(e) => setClassForm({ ...classForm, description: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-xl"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-hidden"
                                     placeholder="Penjelasan usia masuk dan kriteria..."
                                 />
                             </div>
@@ -1003,25 +1131,25 @@ export default function Program() {
                                     id="class_active"
                                     checked={classForm.is_active}
                                     onChange={(e) => setClassForm({ ...classForm, is_active: e.target.checked })}
-                                    className="rounded text-teal-600"
+                                    className="rounded text-teal-600 focus:ring-teal-500 h-4 w-4"
                                 />
                                 <label htmlFor="class_active" className="font-semibold text-slate-700 cursor-pointer">
                                     Aktifkan Pilihan Jenjang di Form PPDB
                                 </label>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-4 border-t">
+                            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={() => setClassModalOpen(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl"
+                                    className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl cursor-pointer disabled:opacity-50"
                                 >
                                     {saving ? 'Menyimpan...' : 'Simpan Kelas'}
                                 </button>

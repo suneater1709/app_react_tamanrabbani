@@ -3,8 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { BookOpen, User, Users, Upload, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, Calendar, Sparkles, FileText, HelpCircle, FilePlus, ArrowRight } from 'lucide-react';
+import { BookOpen, User, Users, Upload, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, Calendar, Sparkles, FileText, HelpCircle, FilePlus, ArrowRight, Copy, Check } from 'lucide-react';
 import { cmsApi } from '../../services/api';
 import axios from 'axios';
 
@@ -262,35 +261,87 @@ export default function Revision() {
         }
     };
 
-    // Calculate dynamic nominal fee based on selected program matching Gambar 1
-    const getProgramNominal = () => {
-        const selectedId = watchProgramId || formData.program_id;
-        if (selectedId === '1' || selectedId === 1 || selectedId === 'pg') {
-            return { fee: 'Rp 450.000', name: 'Playgroup (KB)' };
+    const [feeCalculation, setFeeCalculation] = useState<{
+        entry_fee: number;
+        form_fee: number;
+        discount_amount: number;
+        total_transfer_amount: number;
+        wave_name: string;
+        program_name: string;
+    } | null>(null);
+    const [copiedRekening, setCopiedRekening] = useState(false);
+
+    const copyToClipboard = (text: string) => {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        } else {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            return new Promise<void>((resolve, reject) => {
+                document.execCommand('copy') ? resolve() : reject(new Error('Gagal menyalin'));
+                textArea.remove();
+            });
         }
-        if (selectedId === '2' || selectedId === 2 || selectedId === 'tka') {
-            return { fee: 'Rp 600.000', name: 'TK A' };
-        }
-        if (selectedId === '3' || selectedId === 3 || selectedId === 'tkb') {
-            return { fee: 'Rp 650.000', name: 'TK B' };
-        }
-        
-        // Dynamic matching of program codes if IDs are database auto-increments
-        const selectedProg = programs.find(p => p.id.toString() === selectedId?.toString());
-        if (selectedProg) {
-            if (selectedProg.code.includes('KB') || selectedProg.code.includes('Playgroup')) {
-                return { fee: 'Rp 450.000', name: selectedProg.name };
-            }
-            if (selectedProg.code.includes('TK-A') || selectedProg.code.includes('TK A')) {
-                return { fee: 'Rp 600.000', name: selectedProg.name };
-            }
-            if (selectedProg.code.includes('TK-B') || selectedProg.code.includes('TK B')) {
-                return { fee: 'Rp 650.000', name: selectedProg.name };
-            }
-        }
-        
-        return { fee: 'Rp 650.000', name: 'TK B' };
     };
+
+    const handleCopyRekening = () => {
+        copyToClipboard('7122107207')
+            .then(() => {
+                setCopiedRekening(true);
+                setTimeout(() => setCopiedRekening(false), 2000);
+            })
+            .catch(() => {
+                // fallback
+            });
+    };
+
+    const getCalculatedFee = (progId: any) => {
+        const selectedProg = programs.find(p => p.id.toString() === progId?.toString());
+        const isKb = selectedProg?.code?.toUpperCase().includes('KB') || 
+                     selectedProg?.code?.toUpperCase().includes('PG') || 
+                     progId === '1' || progId === 1 || progId === 'pg';
+        
+        const entryFee = isKb ? 2800000 : 3950000;
+        const formFee = 100000;
+        const discount = 400000;
+        const total = Math.max(0, entryFee + formFee - discount);
+        return {
+            entry_fee: entryFee,
+            form_fee: formFee,
+            discount_amount: discount,
+            total_transfer_amount: total,
+            wave_name: 'Gelombang Aktif',
+            program_name: selectedProg?.name || (isKb ? 'Kelompok Bermain (KB)' : 'Taman Kanak-Kanak (TK A & TK B)')
+        };
+    };
+
+    useEffect(() => {
+        const selectedId = watchProgramId || formData.program_id;
+        if (!selectedId) return;
+
+        const numericId = parseInt(selectedId.toString(), 10);
+        if (!isNaN(numericId)) {
+            cmsApi.calculateFee(numericId)
+                .then(res => {
+                    if (res && res.success && res.data) {
+                        setFeeCalculation(res.data);
+                    } else {
+                        setFeeCalculation(getCalculatedFee(selectedId));
+                    }
+                })
+                .catch(() => {
+                    setFeeCalculation(getCalculatedFee(selectedId));
+                });
+        } else {
+            setFeeCalculation(getCalculatedFee(selectedId));
+        }
+    }, [watchProgramId, formData.program_id, programs]);
 
     const onSubmitFinal = async () => {
         setSubmitError(null);
@@ -888,31 +939,82 @@ export default function Revision() {
                                     </div>
                                 )}
 
-                                {/* Payment instruction box matching Gambar 1 */}
-                                <div className="bg-amber-50/50 p-6 rounded-3xl space-y-4 border-none text-left">
-                                    <h4 className="font-extrabold text-amber-800 text-xs sm:text-sm flex items-center gap-1.5 uppercase tracking-wide">
-                                        <span>⚠️</span>
-                                        <span>Penting: Informasi Pembayaran Pendaftaran</span>
-                                    </h4>
-                                    <p className="text-slate-600 text-xxs sm:text-xs leading-relaxed">
-                                        Silakan melakukan transfer biaya pendaftaran ke rekening berikut:
-                                    </p>
-                                    
-                                    <div className="bg-white p-5 rounded-2xl shadow-sm text-xs sm:text-sm space-y-2 border-none">
-                                        <p className="text-slate-600"><strong>Bank:</strong> Bank Syariah Indonesia (BSI)</p>
-                                        <p className="text-slate-600">
-                                            <strong>Nomor Rekening:</strong>{' '}
-                                            <span className="px-2.5 py-0.5 bg-amber-100 text-amber-850 font-extrabold rounded-lg font-mono tracking-wider text-xs">
-                                                7122107207
-                                            </span>
-                                        </p>
-                                        <p className="text-slate-600"><strong>Atas Nama (an):</strong> Rumi Salam Muhaimin</p>
-                                        <p className="text-slate-600">
-                                            <strong>Nominal:</strong>{' '}
-                                            <span className="font-bold text-teal-700">Rp 100.000</span>
-                                        </p>
-                                    </div>
-                                </div>
+                                {/* Official 3-line Payment Breakdown & Transfer Information Box (Clean Light Theme) */}
+                                {(() => {
+                                    const calc = feeCalculation || getCalculatedFee(formData.program_id);
+                                    const formatRp = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+                                    return (
+                                        <div className="bg-[#F5FAFF] p-6 sm:p-7 rounded-3xl space-y-5 shadow-xs border border-sky-200/80 text-left">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-sky-200/60 pb-4">
+                                                <div>
+                                                    <span className="text-teal-700 text-xxs font-extrabold uppercase tracking-widest block">Rincian Resmi Pembayaran</span>
+                                                    <h4 className="text-base sm:text-lg font-bold text-slate-800 mt-0.5">
+                                                        Verifikasi Berkas & Uang Masuk PPDB
+                                                    </h4>
+                                                </div>
+                                                {formData.full_name && (
+                                                    <span className="px-3 py-1 bg-white text-teal-800 text-xs font-semibold rounded-full self-start sm:self-auto border border-teal-200/70 shadow-2xs">
+                                                        Calon Siswa: <strong>{formData.full_name}</strong>
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* 3 Calculation Lines */}
+                                            <div className="space-y-2.5 bg-white p-4 sm:p-5 rounded-2xl text-xs border border-sky-100 shadow-2xs">
+                                                <div className="flex justify-between items-center text-slate-600">
+                                                    <span className="font-medium">+ Biaya Masuk {calc.program_name}</span>
+                                                    <span className="font-bold text-slate-800">{formatRp(calc.entry_fee)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-slate-600">
+                                                    <span className="font-medium">+ Biaya Form Pendaftaran</span>
+                                                    <span className="font-bold text-slate-800">{formatRp(calc.form_fee)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-emerald-700">
+                                                    <span className="font-medium">− Diskon Potongan Uang Pangkal ({calc.wave_name})</span>
+                                                    <span className="font-bold">− {formatRp(calc.discount_amount)}</span>
+                                                </div>
+                                                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-sky-50/50 -mx-4 -mb-4 sm:-mx-5 sm:-mb-5 p-4 sm:p-5 rounded-b-2xl">
+                                                    <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-800">
+                                                        TOTAL YANG HARUS DITRANSFER:
+                                                    </span>
+                                                    <span className="text-xl sm:text-2xl font-black text-teal-800 font-mono tracking-tight">
+                                                        {formatRp(calc.total_transfer_amount)}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Destination Bank Account Information with Copy Button */}
+                                            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-sky-100 shadow-2xs space-y-3 text-xs">
+                                                <span className="text-teal-700 text-xxs font-bold uppercase tracking-wider block">Rekening Tujuan Transfer Resmi:</span>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-700">
+                                                    <div>
+                                                        <span className="text-slate-400 text-xxs block">Bank:</span>
+                                                        <strong className="text-slate-800 text-xs sm:text-sm">Bank Syariah Indonesia (BSI)</strong>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-slate-400 text-xxs block">Nomor Rekening:</span>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="font-mono font-bold text-slate-900 text-sm sm:text-base tracking-wider">7122107207</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleCopyRekening}
+                                                                className="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-lg text-xxs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
+                                                                title="Salin Nomor Rekening"
+                                                            >
+                                                                {copiedRekening ? <Check size={12} className="text-teal-700" /> : <Copy size={12} />}
+                                                                <span>{copiedRekening ? 'Tersalin ✓' : 'Salin'}</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-slate-400 text-xxs block">Atas Nama (a/n):</span>
+                                                        <strong className="text-slate-800 text-xs sm:text-sm">Rumi Salam Muhaimin</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Testing utility help info */}
                                 <div className="p-4 bg-slate-50 rounded-2xl text-[10px] sm:text-xs text-slate-500 leading-relaxed border-none flex items-start gap-1.5">

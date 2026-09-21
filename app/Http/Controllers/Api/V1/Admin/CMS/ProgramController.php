@@ -168,4 +168,38 @@ class ProgramController extends Controller
             'message' => 'Program berhasil dihapus.',
         ]);
     }
+
+    /**
+     * Toggle active status of the specified program.
+     */
+    public function toggleStatus(Request $request, int $id): JsonResponse
+    {
+        $program = Program::find($id);
+
+        if (! $program) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Program tidak ditemukan.',
+            ], 404);
+        }
+
+        $program->is_active = ! $program->is_active;
+        $program->save();
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'toggle_program_status',
+            'description' => "Toggled status of program {$program->name} to ".($program->is_active ? 'Active' : 'Inactive'),
+            'model_type' => Program::class,
+            'model_id' => $program->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status program berhasil diubah.',
+            'data' => $program,
+        ]);
+    }
 }

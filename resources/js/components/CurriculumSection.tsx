@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     School, BookOpen, GraduationCap, HeartHandshake, Activity, 
-    Sparkles, ChevronRight, ChevronLeft, X, Layers, Clock, Users, Play, Pause
+    ChevronRight, X, Layers, Clock, Users
 } from 'lucide-react';
 import { cmsApi } from '../services/api';
 
@@ -232,7 +232,7 @@ export default function CurriculumSection({ className = '', showShadow = true }:
             </div>
 
             {/* 2. Category Tab Pills - Minimalis & Intuitif */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 pt-1">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scrollbar-none pb-1 pt-1">
                 {(['school', 'class', 'akhlak', 'quran', 'uks'] as const).map((catKey) => {
                     const meta = CATEGORY_META[catKey];
                     const Icon = meta.icon;
@@ -287,7 +287,8 @@ export default function CurriculumSection({ className = '', showShadow = true }:
                 onMouseLeave={() => setIsHovered(false)}
                 onTouchStart={() => setIsHovered(true)}
                 onTouchEnd={() => setIsHovered(false)}
-                className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-5 pb-3 pt-1"
+                className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar scrollbar-none gap-5 pb-3 pt-1"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {currentCategoryItems.map((item, idx) => (
                     <div
@@ -332,15 +333,19 @@ export default function CurriculumSection({ className = '', showShadow = true }:
                 <span className="font-semibold text-teal-700">Total {currentCategoryItems.length} kegiatan</span>
             </div>
 
-            {/* 5. MODAL FULL LIST CATEGORY */}
+            {/* 5. MODAL FULL LIST CATEGORY (NO SCROLLBAR) */}
             <AnimatePresence>
                 {modalCategory && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                    <div 
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+                        onClick={() => setModalCategory(null)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl overflow-hidden relative max-h-[85vh] flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl overflow-hidden relative max-h-[85vh] flex flex-col border border-slate-100"
                         >
                             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                                 <div className="flex items-center gap-3">
@@ -365,18 +370,22 @@ export default function CurriculumSection({ className = '', showShadow = true }:
                                 </button>
                             </div>
 
-                            <div className="overflow-y-auto py-4 space-y-3 pr-2">
+                            {/* List with hidden scrollbar */}
+                            <div 
+                                className="overflow-y-auto no-scrollbar scrollbar-none py-4 space-y-3 pr-1"
+                                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                            >
                                 {(curriculumData[modalCategory] || []).filter(item => item.is_active !== false).map((prog, idx) => (
-                                    <div key={prog.id || idx} className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-2">
-                                        <div className="flex items-center justify-between">
+                                    <div key={prog.id || idx} className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-2 hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center justify-between gap-2">
                                             <span className="font-bold text-sm text-slate-800 flex items-center gap-2">
-                                                <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-xxs flex items-center justify-center font-bold">
+                                                <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-xxs flex items-center justify-center font-bold flex-shrink-0">
                                                     {idx + 1}
                                                 </span>
                                                 <span>{prog.title}</span>
                                             </span>
                                             {(prog.frequency || prog.time_allocation) && (
-                                                <span className="px-2 py-0.5 bg-white text-slate-600 rounded-full text-[10px] font-semibold flex items-center gap-1 border border-slate-200/60 shadow-2xs">
+                                                <span className="px-2 py-0.5 bg-white text-slate-600 rounded-full text-[10px] font-semibold flex items-center gap-1 border border-slate-200/60 shadow-2xs flex-shrink-0">
                                                     <Clock size={10} className="text-teal-600 flex-shrink-0" />
                                                     <span>{prog.frequency || prog.time_allocation}</span>
                                                 </span>
@@ -399,9 +408,9 @@ export default function CurriculumSection({ className = '', showShadow = true }:
                                 <button
                                     type="button"
                                     onClick={() => setModalCategory(null)}
-                                    className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                                    className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                                 >
-                                    Tutup
+                                    Selesai Membaca
                                 </button>
                             </div>
                         </motion.div>

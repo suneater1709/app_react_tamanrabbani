@@ -30,6 +30,7 @@ export const cmsApi = {
     getGallery: (category = 'all') => api.get(`/public/cms/gallery?category=${category}`).then(res => res.data),
     submitContact: (data: { name: string; email: string; phone?: string; subject?: string; message: string }) => 
         api.post('/public/contacts', data).then(res => res.data),
+    calculateFee: (programId: number) => api.get('/public/admissions/calculate-fee', { params: { program_id: programId } }).then(res => res.data),
 };
 
 // Administrative endpoints
@@ -52,18 +53,21 @@ export const adminApi = {
     getAdminPrograms: () => api.get('/admin/cms/programs').then(res => res.data),
     createProgram: (data: any) => api.post('/admin/cms/programs', data).then(res => res.data),
     updateProgram: (id: number, data: any) => api.put(`/admin/cms/programs/${id}`, data).then(res => res.data),
+    toggleProgram: (id: number) => api.patch(`/admin/cms/programs/${id}/toggle-status`).then(res => res.data),
     deleteProgram: (id: number) => api.delete(`/admin/cms/programs/${id}`).then(res => res.data),
 
     // CMS Curriculum Programs (5 Categories)
     getCurriculumPrograms: (category?: string) => api.get('/admin/cms/curriculum-programs', { params: { category } }).then(res => res.data),
     createCurriculumProgram: (data: any) => api.post('/admin/cms/curriculum-programs', data).then(res => res.data),
     updateCurriculumProgram: (id: number, data: any) => api.put(`/admin/cms/curriculum-programs/${id}`, data).then(res => res.data),
+    toggleCurriculumProgram: (id: number) => api.patch(`/admin/cms/curriculum-programs/${id}/toggle-status`).then(res => res.data),
     deleteCurriculumProgram: (id: number) => api.delete(`/admin/cms/curriculum-programs/${id}`).then(res => res.data),
 
     // CMS Extracurriculars (KB & TK)
     getExtracurriculars: (level?: string) => api.get('/admin/cms/extracurriculars', { params: { level } }).then(res => res.data),
     createExtracurricular: (data: any) => api.post('/admin/cms/extracurriculars', data).then(res => res.data),
     updateExtracurricular: (id: number, data: any) => api.put(`/admin/cms/extracurriculars/${id}`, data).then(res => res.data),
+    toggleExtracurricular: (id: number) => api.patch(`/admin/cms/extracurriculars/${id}/toggle-status`).then(res => res.data),
     deleteExtracurricular: (id: number) => api.delete(`/admin/cms/extracurriculars/${id}`).then(res => res.data),
 
     // CMS News

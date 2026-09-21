@@ -60,6 +60,20 @@ class AdmissionController extends Controller
     }
 
     /**
+     * Preview fee calculation dynamically for public registration wizard.
+     */
+    public function calculateFee(Request $request): JsonResponse
+    {
+        $programId = $request->query('program_id', $request->input('program_id'));
+        $snapshot = $this->admissionService->calculatePaymentSnapshot($programId);
+
+        return response()->json([
+            'success' => true,
+            'data' => $snapshot,
+        ]);
+    }
+
+    /**
      * Search/Track registration status by number & name.
      */
     public function track(Request $request): JsonResponse
@@ -97,6 +111,13 @@ class AdmissionController extends Controller
             }
         }
 
+        // Ensure payment snapshot is loaded or populated
+        $paymentBreakdown = $pendaftar->payment_breakdown;
+        if (! $paymentBreakdown && $pendaftar->program_id) {
+            $calc = $this->admissionService->calculatePaymentSnapshot($pendaftar->program_id);
+            $paymentBreakdown = $calc['payment_breakdown'];
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -106,6 +127,12 @@ class AdmissionController extends Controller
                 'program_code' => $pendaftar->program->code,
                 'created_at' => $pendaftar->created_at->toISOString(),
                 'status' => $pendaftar->status,
+                'entry_fee' => $pendaftar->entry_fee,
+                'form_fee' => $pendaftar->form_fee,
+                'discount_amount' => $pendaftar->discount_amount,
+                'total_transfer_amount' => $pendaftar->total_transfer_amount,
+                'wave_name' => $pendaftar->wave_name,
+                'payment_breakdown' => $paymentBreakdown,
                 'verifier_notes' => $pendaftar->verifier_notes,
                 'timeline' => $pendaftar->statusLogs->map(function ($log) {
                     return [
@@ -132,7 +159,7 @@ class AdmissionController extends Controller
             ], 404);
         }
 
-        $pendaftar->load(['parents']);
+        $pendaftar->load(['parents', 'program']);
 
         return response()->json([
             'success' => true,

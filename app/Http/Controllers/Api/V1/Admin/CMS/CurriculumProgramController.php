@@ -212,14 +212,53 @@ class CurriculumProgramController extends Controller
     }
 
     /**
+     * Toggle active status of a curriculum program.
+     */
+    public function toggleStatus(Request $request, int $id): JsonResponse
+    {
+        $program = CurriculumProgram::find($id);
+
+        if (! $program) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Program kurikulum tidak ditemukan.',
+            ], 404);
+        }
+
+        $program->is_active = ! $program->is_active;
+        $program->save();
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'toggle_curriculum_status',
+            'description' => "Toggled status of curriculum program {$program->title} to ".($program->is_active ? 'Active' : 'Inactive'),
+            'model_type' => CurriculumProgram::class,
+            'model_id' => $program->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status program kurikulum berhasil diubah.',
+            'data' => $program,
+        ]);
+    }
+
+    /**
      * Store extracurricular item.
      */
     public function storeExtracurricular(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'level' => 'required|in:KB,TK',
-            'name' => 'required|string|max:255',
+            'level' => 'required|in:KB,TK,ALL,kb,tk,all',
+            'name' => 'nullable|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'instructor' => 'nullable|string|max:255',
+            'schedule' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
             'order' => 'nullable|integer',
+            'is_active' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -229,10 +268,22 @@ class CurriculumProgramController extends Controller
             ], 422);
         }
 
+        $name = $request->input('name') ?: $request->input('title');
+        if (empty($name)) {
+            return response()->json([
+                'success' => false,
+                'errors' => ['name' => ['Nama kegiatan ekstrakurikuler wajib diisi.']],
+            ], 422);
+        }
+
         $ekskul = Extracurricular::create([
-            'level' => $request->level,
-            'name' => $request->name,
+            'level' => strtoupper($request->level),
+            'name' => $name,
+            'instructor' => $request->instructor,
+            'schedule' => $request->schedule,
+            'description' => $request->description,
             'order' => $request->order ?? 0,
+            'is_active' => $request->has('is_active') ? filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN) : true,
         ]);
 
         return response()->json([
@@ -257,9 +308,14 @@ class CurriculumProgramController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'level' => 'required|in:KB,TK',
-            'name' => 'required|string|max:255',
+            'level' => 'required|in:KB,TK,ALL,kb,tk,all',
+            'name' => 'nullable|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'instructor' => 'nullable|string|max:255',
+            'schedule' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
             'order' => 'nullable|integer',
+            'is_active' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -269,11 +325,55 @@ class CurriculumProgramController extends Controller
             ], 422);
         }
 
-        $ekskul->update($request->only(['level', 'name', 'order']));
+        $name = $request->input('name') ?: $request->input('title') ?: $ekskul->name;
+
+        $ekskul->update([
+            'level' => strtoupper($request->level),
+            'name' => $name,
+            'instructor' => $request->has('instructor') ? $request->instructor : $ekskul->instructor,
+            'schedule' => $request->has('schedule') ? $request->schedule : $ekskul->schedule,
+            'description' => $request->has('description') ? $request->description : $ekskul->description,
+            'order' => $request->has('order') ? $request->order : $ekskul->order,
+            'is_active' => $request->has('is_active') ? filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN) : $ekskul->is_active,
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Ekstrakurikuler berhasil diperbarui.',
+            'data' => $ekskul,
+        ]);
+    }
+
+    /**
+     * Toggle active status of an extracurricular item.
+     */
+    public function toggleExtracurricularStatus(Request $request, int $id): JsonResponse
+    {
+        $ekskul = Extracurricular::find($id);
+
+        if (! $ekskul) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ekstrakurikuler tidak ditemukan.',
+            ], 404);
+        }
+
+        $ekskul->is_active = ! $ekskul->is_active;
+        $ekskul->save();
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'toggle_extracurricular_status',
+            'description' => "Toggled status of extracurricular {$ekskul->name} to ".($ekskul->is_active ? 'Active' : 'Inactive'),
+            'model_type' => Extracurricular::class,
+            'model_id' => $ekskul->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status ekstrakurikuler berhasil diubah.',
             'data' => $ekskul,
         ]);
     }

@@ -31,12 +31,23 @@ class Pendaftar extends Model
         'address',
         'previous_school',
         'status',
+        'entry_fee',
+        'form_fee',
+        'discount_amount',
+        'total_transfer_amount',
+        'wave_name',
+        'payment_breakdown',
         'verifier_notes',
         'notes',
     ];
 
     protected $casts = [
         'birth_date' => 'date',
+        'entry_fee' => 'float',
+        'form_fee' => 'float',
+        'discount_amount' => 'float',
+        'total_transfer_amount' => 'float',
+        'payment_breakdown' => 'array',
     ];
 
     protected static function booted()

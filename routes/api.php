@@ -23,15 +23,20 @@ Route::prefix('v1')->group(function () {
     // Public Routes
     Route::prefix('public')->group(function () {
         Route::get('programs', [PublicCmsController::class, 'programs']);
+        Route::get('curriculum-programs', [PublicCmsController::class, 'curriculumPrograms']);
         Route::get('cms/curriculum-programs', [PublicCmsController::class, 'curriculumPrograms']);
         Route::get('cms/home', [PublicCmsController::class, 'home']);
         Route::get('cms/news', [PublicCmsController::class, 'news']);
+        Route::get('news', [PublicCmsController::class, 'news']);
         Route::get('cms/news/{slug}', [PublicCmsController::class, 'newsDetail']);
         Route::get('cms/faqs', [PublicCmsController::class, 'faqs']);
+        Route::get('faqs', [PublicCmsController::class, 'faqs']);
         Route::get('cms/gallery', [PublicCmsController::class, 'galleries']);
+        Route::get('gallery', [PublicCmsController::class, 'galleries']);
         Route::get('settings', [PublicCmsController::class, 'settings']);
 
         Route::post('admissions', [PublicAdmissionController::class, 'store']);
+        Route::get('admissions/calculate-fee', [PublicAdmissionController::class, 'calculateFee']);
         Route::get('admissions/track', [PublicAdmissionController::class, 'track']);
 
         Route::get('admissions/revisi/{regNumber}', [PublicAdmissionController::class, 'getForRevision']);
@@ -73,11 +78,17 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('cms/news', AdminNewsController::class);
             Route::apiResource('cms/gallery', AdminGalleryController::class);
             Route::apiResource('cms/faqs', AdminFaqController::class);
+            Route::patch('cms/programs/{id}/toggle-status', [AdminProgramController::class, 'toggleStatus']);
+            Route::patch('cms/programs/{id}/toggle', [AdminProgramController::class, 'toggleStatus']);
             Route::apiResource('cms/programs', AdminProgramController::class);
+            Route::patch('cms/curriculum-programs/{id}/toggle-status', [AdminCurriculumProgramController::class, 'toggleStatus']);
+            Route::patch('cms/curriculum-programs/{id}/toggle', [AdminCurriculumProgramController::class, 'toggleStatus']);
             Route::apiResource('cms/curriculum-programs', AdminCurriculumProgramController::class);
             Route::get('cms/extracurriculars', [AdminCurriculumProgramController::class, 'getExtracurriculars']);
             Route::post('cms/extracurriculars', [AdminCurriculumProgramController::class, 'storeExtracurricular']);
             Route::put('cms/extracurriculars/{id}', [AdminCurriculumProgramController::class, 'updateExtracurricular']);
+            Route::patch('cms/extracurriculars/{id}/toggle-status', [AdminCurriculumProgramController::class, 'toggleExtracurricularStatus']);
+            Route::patch('cms/extracurriculars/{id}/toggle', [AdminCurriculumProgramController::class, 'toggleExtracurricularStatus']);
             Route::delete('cms/extracurriculars/{id}', [AdminCurriculumProgramController::class, 'destroyExtracurricular']);
             Route::get('cms/profile', [AdminProfileController::class, 'index']);
             Route::put('cms/profile', [AdminProfileController::class, 'update']);

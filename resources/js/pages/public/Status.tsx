@@ -172,6 +172,18 @@ export default function Status() {
                                 </div>
                             </div>
 
+                            {result.total_transfer_amount && (
+                                <div className="p-4 bg-teal-50/80 rounded-2xl border border-teal-100/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
+                                    <div>
+                                        <span className="text-xxs font-bold text-teal-700 uppercase tracking-wider block">Total Transfer Pembayaran PPDB</span>
+                                        <span className="text-xs text-slate-600">Gelombang: <strong>{result.wave_name || 'Gelombang 1'}</strong></span>
+                                    </div>
+                                    <span className="text-base sm:text-lg font-extrabold text-teal-800 font-mono">
+                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(result.total_transfer_amount)}
+                                    </span>
+                                </div>
+                            )}
+
                             {result.verifier_notes && (
                                 <div className="p-4 bg-slate-50 rounded-xl border-none">
                                     <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider block mb-1">Catatan Tim Verifikasi</span>
