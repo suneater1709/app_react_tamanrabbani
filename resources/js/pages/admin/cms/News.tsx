@@ -111,29 +111,39 @@ export default function News() {
         setFormError(null);
 
         if (!title.trim()) {
-            setFormError('Judul berita wajib diisi.');
+            setFormError('Judul artikel / dokumen wajib diisi.');
             return;
         }
 
         if (contentType === 'link' && !externalLink.trim()) {
-            setFormError('Alamat tautan eksternal (URL) wajib diisi.');
+            setFormError('Alamat tautan sumber (URL) wajib diisi.');
+            return;
+        }
+
+        if (contentType === 'file' && !editingItem && !pdfFile) {
+            setFormError('Silakan pilih berkas dokumen PDF yang ingin diunggah.');
+            return;
+        }
+
+        if (contentType === 'image' && !content.trim()) {
+            setFormError('Isi konten berita wajib diisi.');
             return;
         }
 
         setSaving(true);
         const formData = new FormData();
-        formData.append('title', title);
+        formData.append('title', title.trim());
         formData.append('content_type', contentType);
-        formData.append('content', content);
+        formData.append('content', content ? content.trim() : '');
         formData.append('is_published', isPublished ? '1' : '0');
-        if (externalLink) formData.append('external_link', externalLink);
+        if (externalLink) formData.append('external_link', externalLink.trim());
         if (pdfFile) {
             formData.append('pdf_file', pdfFile);
             formData.append('file', pdfFile);
         }
         if (imageFile) formData.append('image', imageFile);
-        if (seoTitle) formData.append('seo_title', seoTitle);
-        if (seoDescription) formData.append('seo_description', seoDescription);
+        if (seoTitle) formData.append('seo_title', seoTitle.trim());
+        if (seoDescription) formData.append('seo_description', seoDescription.trim());
         if (editingItem) formData.append('_method', 'PUT');
 
         const apiCall = editingItem
@@ -152,7 +162,13 @@ export default function News() {
             })
             .catch((err) => {
                 console.error(err);
-                setFormError(err.response?.data?.message || 'Gagal menyimpan berita. Periksa ukuran berkas (Cover max 2MB, PDF max 10MB).');
+                const errors = err.response?.data?.errors;
+                if (errors && typeof errors === 'object') {
+                    const firstMsg = Object.values(errors).flat()[0] as string;
+                    setFormError(firstMsg || err.response?.data?.message || 'Gagal menyimpan artikel/dokumen.');
+                } else {
+                    setFormError(err.response?.data?.message || 'Gagal menyimpan berita. Periksa ukuran berkas (Cover max 3MB, PDF max 10MB).');
+                }
             })
             .finally(() => setSaving(false));
     };

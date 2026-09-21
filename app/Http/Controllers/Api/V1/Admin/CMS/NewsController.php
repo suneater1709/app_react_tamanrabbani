@@ -31,9 +31,10 @@ class NewsController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
+        $contentType = $request->input('content_type', 'image');
+
+        $rules = [
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
             'content_type' => 'nullable|in:image,file,link',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
             'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
@@ -42,27 +43,41 @@ class NewsController extends Controller
             'is_published' => 'required|boolean',
             'seo_title' => 'nullable|string|max:255',
             'seo_description' => 'nullable|string|max:500',
-        ], [
+        ];
+
+        if ($contentType === 'link') {
+            $rules['external_link'] = 'required|url|max:500';
+            $rules['content'] = 'nullable|string';
+        } elseif ($contentType === 'file') {
+            $rules['content'] = 'nullable|string';
+        } else {
+            $rules['content'] = 'required|string';
+        }
+
+        $validator = Validator::make($request->all(), $rules, [
             'title.required' => 'Judul berita wajib diisi.',
-            'content.required' => 'Isi berita wajib diisi.',
+            'content.required' => 'Isi konten berita wajib diisi.',
             'image.image' => 'Cover harus berupa berkas gambar.',
             'image.max' => 'Ukuran cover tidak boleh melebihi 3MB.',
             'file.mimes' => 'File dokumen harus berupa PDF, DOC, atau DOCX.',
             'file.max' => 'Ukuran dokumen tidak boleh melebihi 10MB.',
             'pdf_file.mimes' => 'File dokumen harus berupa PDF, DOC, atau DOCX.',
             'pdf_file.max' => 'Ukuran dokumen tidak boleh melebihi 10MB.',
-            'external_link.url' => 'Format tautan eksternal harus berupa URL yang valid (diawali http/https).',
+            'external_link.required' => 'Alamat tautan sumber (URL) wajib diisi.',
+            'external_link.url' => 'Format tautan eksternal harus berupa URL yang valid (diawali http:// atau https://).',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors(),
             ], 422);
         }
 
-        $data = $request->only(['title', 'content', 'content_type', 'external_link', 'is_published', 'seo_title', 'seo_description']);
-        $data['content_type'] = $data['content_type'] ?? 'image';
+        $data = $request->only(['title', 'content_type', 'external_link', 'is_published', 'seo_title', 'seo_description']);
+        $data['content_type'] = $contentType;
+        $data['content'] = $request->input('content') ?? '';
 
         // Generate Unique Slug
         $slug = Str::slug($request->title);
@@ -135,9 +150,10 @@ class NewsController extends Controller
             ], 404);
         }
 
-        $validator = Validator::make($request->all(), [
+        $contentType = $request->input('content_type', $news->content_type ?? 'image');
+
+        $rules = [
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
             'content_type' => 'nullable|in:image,file,link',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
             'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
@@ -146,28 +162,42 @@ class NewsController extends Controller
             'is_published' => 'required|boolean',
             'seo_title' => 'nullable|string|max:255',
             'seo_description' => 'nullable|string|max:500',
-        ], [
+        ];
+
+        if ($contentType === 'link') {
+            $rules['external_link'] = 'required|url|max:500';
+            $rules['content'] = 'nullable|string';
+        } elseif ($contentType === 'file') {
+            $rules['content'] = 'nullable|string';
+        } else {
+            $rules['content'] = 'required|string';
+        }
+
+        $validator = Validator::make($request->all(), $rules, [
             'title.required' => 'Judul berita wajib diisi.',
-            'content.required' => 'Isi berita wajib diisi.',
+            'content.required' => 'Isi konten berita wajib diisi.',
             'image.image' => 'Cover harus berupa berkas gambar.',
             'image.max' => 'Ukuran cover tidak boleh melebihi 3MB.',
             'file.mimes' => 'File dokumen harus berupa PDF, DOC, atau DOCX.',
             'file.max' => 'Ukuran dokumen tidak boleh melebihi 10MB.',
             'pdf_file.mimes' => 'File dokumen harus berupa PDF, DOC, atau DOCX.',
             'pdf_file.max' => 'Ukuran dokumen tidak boleh melebihi 10MB.',
-            'external_link.url' => 'Format tautan eksternal harus berupa URL yang valid (diawali http/https).',
+            'external_link.required' => 'Alamat tautan sumber (URL) wajib diisi.',
+            'external_link.url' => 'Format tautan eksternal harus berupa URL yang valid (diawali http:// atau https://).',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors(),
             ], 422);
         }
 
-        $data = $request->only(['title', 'content', 'content_type', 'external_link', 'is_published', 'seo_title', 'seo_description']);
-        if (! isset($data['content_type'])) {
-            $data['content_type'] = $news->content_type ?? 'image';
+        $data = $request->only(['title', 'content_type', 'external_link', 'is_published', 'seo_title', 'seo_description']);
+        $data['content_type'] = $contentType;
+        if ($request->has('content')) {
+            $data['content'] = $request->input('content') ?? '';
         }
 
         // Update Slug if title changed
