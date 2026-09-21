@@ -2,7 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 import { scrollToTop } from '../../lib/utils';
-import { Search, Eye, CheckCircle, RefreshCcw, AlertTriangle, FileCheck, FileText, User, Users, Calendar, Download, ShieldCheck, HelpCircle, Clock, X, ExternalLink, Loader2, ArrowLeft } from 'lucide-react';
+import { 
+    Search, Eye, CheckCircle, RefreshCcw, AlertTriangle, FileCheck, FileText, 
+    User, Users, Calendar, Download, ShieldCheck, HelpCircle, Clock, X, 
+    ExternalLink, Loader2, ArrowLeft, Receipt, Wallet, ZoomIn, ZoomOut, 
+    RotateCcw, FileQuestion, CheckCircle2, AlertCircle
+} from 'lucide-react';
 
 interface Program {
     name: string;
@@ -22,7 +27,7 @@ interface Parent {
 
 interface Document {
     id: number;
-    document_type: 'birth_certificate' | 'family_card' | 'photo';
+    document_type: 'birth_certificate' | 'family_card' | 'photo' | 'payment_receipt';
     file_path: string;
 }
 
@@ -54,6 +59,12 @@ interface Dossier {
     parents: Parent[];
     documents: Document[];
     status_logs: StatusLog[];
+    entry_fee?: number | null;
+    form_fee?: number | null;
+    discount_amount?: number | null;
+    total_transfer_amount?: number | null;
+    wave_name?: string | null;
+    payment_breakdown?: any;
 }
 
 interface ApplicantSummary {
@@ -62,6 +73,13 @@ interface ApplicantSummary {
     full_name: string;
     status: string;
 }
+
+const REQUIRED_DOC_TYPES = [
+    { type: 'birth_certificate', label: 'Akta Kelahiran' },
+    { type: 'family_card', label: 'Kartu Keluarga' },
+    { type: 'photo', label: 'Pas Foto' },
+    { type: 'payment_receipt', label: 'Bukti Pembayaran' },
+] as const;
 
 export default function Verification() {
     const location = useLocation();
@@ -102,15 +120,20 @@ export default function Verification() {
         fileName: string;
     } | null>(null);
     const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null);
+    const [previewError, setPreviewError] = useState<string | null>(null);
+    const [zoomScale, setZoomScale] = useState<number>(1);
 
     const handlePreviewDocument = async (doc: Document) => {
         setPreviewLoadingId(doc.id);
+        setPreviewError(null);
+
         try {
             const blob = await adminApi.getDocumentBlob(doc.id);
             const isPdf = blob.type.includes('pdf') || doc.file_path.toLowerCase().endsWith('.pdf');
             const url = URL.createObjectURL(blob);
             const fileName = doc.file_path.split('/').pop() || 'dokumen';
 
+            setZoomScale(1);
             setPreviewDoc({
                 id: doc.id,
                 title: getDocLabel(doc.document_type),
@@ -120,7 +143,23 @@ export default function Verification() {
             });
         } catch (err: any) {
             console.error('Gagal memuat dokumen:', err);
-            alert('Gagal memuat berkas dokumen. Pastikan file ada di server dan Anda memiliki akses admin.');
+            let message = 'Gagal memuat berkas dokumen. Pastikan file ada di server dan Anda memiliki akses admin.';
+            
+            // Extract error message from blob error response if applicable
+            if (err.response?.data instanceof Blob) {
+                try {
+                    const text = await err.response.data.text();
+                    const json = JSON.parse(text);
+                    if (json.message) message = json.message;
+                } catch {
+                    // ignore JSON parse error
+                }
+            } else if (err.response?.data?.message) {
+                message = err.response.data.message;
+            }
+
+            setPreviewError(message);
+            setTimeout(() => setPreviewError(null), 6000);
         } finally {
             setPreviewLoadingId(null);
         }
@@ -131,6 +170,7 @@ export default function Verification() {
             URL.revokeObjectURL(previewDoc.url);
         }
         setPreviewDoc(null);
+        setZoomScale(1);
     };
 
     useEffect(() => {
@@ -191,6 +231,7 @@ export default function Verification() {
         setDossierLoading(true);
         setActionSuccessMsg(null);
         setActionErrorMsg(null);
+        setPreviewError(null);
 
         adminApi.getApplicantDetail(selectedId)
             .then((res) => {
@@ -262,11 +303,13 @@ export default function Verification() {
     const getDocLabel = (type: string) => {
         if (type === 'birth_certificate') return 'Akta Kelahiran';
         if (type === 'family_card') return 'Kartu Keluarga';
-        return 'Pas Foto';
+        if (type === 'photo') return 'Pas Foto';
+        if (type === 'payment_receipt') return 'Bukti Pembayaran';
+        return type;
     };
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 w-full lg:h-[calc(100vh-130px)] items-stretch">
+        <div className="flex flex-col lg:flex-row gap-6 w-full lg:h-[calc(100vh-130px)] items-stretch text-left">
             {/* LEFT PANEL: Applicant List */}
             <aside className="w-full lg:w-80 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col flex-shrink-0 overflow-hidden h-[420px] lg:h-full">
                 {/* Search / Filter box */}
@@ -338,6 +381,23 @@ export default function Verification() {
                     </div>
                 ) : (
                     <div className="space-y-6 w-full pb-6">
+                        {/* Inline Document Error Notification */}
+                        {previewError && (
+                            <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-2xl flex items-center justify-between gap-3 shadow-xs animate-in fade-in duration-200">
+                                <div className="flex items-center gap-2">
+                                    <AlertCircle size={16} className="text-rose-600 flex-shrink-0" />
+                                    <span>{previewError}</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewError(null)}
+                                    className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        )}
+
                         {/* Title Header */}
                         <div className="bg-slate-50/60 rounded-xl border border-slate-200/80 p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div className="flex items-start gap-4">
@@ -398,46 +458,112 @@ export default function Verification() {
                             </div>
                         </div>
 
-                        {/* C. Clickable Documents Upload Card */}
+                        {/* C. Payment Breakdown Snapshot Card */}
+                        {(() => {
+                            const isKb = dossier.program?.code === 'KB' || dossier.program?.name?.toLowerCase().includes('bermain');
+                            const defaultEntry = isKb ? 2800000 : 3950000;
+                            const entryFee = Number(dossier.entry_fee || dossier.payment_breakdown?.entry_fee || defaultEntry);
+                            const formFee = Number(dossier.form_fee || dossier.payment_breakdown?.form_fee || 100000);
+                            const discountAmount = Number(dossier.discount_amount || dossier.payment_breakdown?.discount_amount || (dossier.wave_name?.includes('3') ? 0 : 400000));
+                            const totalTransfer = Number(dossier.total_transfer_amount || dossier.payment_breakdown?.total_transfer_amount || (entryFee + formFee - discountAmount));
+                            const waveName = dossier.wave_name || dossier.payment_breakdown?.wave_name || 'Gelombang 1 (Early Bird)';
+
+                            return (
+                                <div className="bg-slate-50/40 rounded-xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs">
+                                    <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center justify-between border-b border-slate-200 pb-2">
+                                        <span className="flex items-center gap-2">
+                                            <Receipt size={16} className="text-teal-600" /> Rincian Tagihan Pembayaran PPDB
+                                        </span>
+                                        <span className="text-xxs font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200/60">
+                                            {waveName}
+                                        </span>
+                                    </h3>
+                                    <div className="bg-white rounded-xl p-4 border border-slate-200 text-xs space-y-2">
+                                        <div className="flex justify-between items-center text-slate-600">
+                                            <span>+ Biaya Masuk ({dossier.program?.name || 'Jenjang'}):</span>
+                                            <span className="font-semibold text-slate-800">
+                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(entryFee)}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-slate-600">
+                                            <span>+ Biaya Form Pendaftaran:</span>
+                                            <span className="font-semibold text-slate-800">
+                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(formFee)}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-emerald-700">
+                                            <span>− Diskon Potongan Uang Pangkal ({waveName}):</span>
+                                            <span className="font-semibold">
+                                                − {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(discountAmount)}
+                                            </span>
+                                        </div>
+                                        <div className="pt-2.5 border-t border-slate-100 flex justify-between items-center">
+                                            <span className="font-extrabold uppercase text-slate-800 text-xs">Total Transfer Wajib:</span>
+                                            <span className="text-base font-black text-teal-700 font-mono">
+                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalTransfer)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* D. Clickable Documents Upload Card with 4 Complete Slots */}
                         <div className="bg-slate-50/40 rounded-xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs">
                             <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-200 pb-2">
                                 <FileText size={16} className="text-teal-600" /> Berkas Dokumen Pendukung
                             </h3>
-                            {dossier.documents.length === 0 ? (
-                                <p className="text-xs text-slate-400 italic">Belum ada dokumen yang diunggah oleh pendaftar.</p>
-                            ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    {dossier.documents.map((doc) => {
-                                        const isLoadingThis = previewLoadingId === doc.id;
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {REQUIRED_DOC_TYPES.map((req) => {
+                                    const doc = dossier.documents.find((d) => d.document_type === req.type);
+                                    if (!doc) {
                                         return (
-                                            <button
-                                                key={doc.id}
-                                                type="button"
-                                                onClick={() => handlePreviewDocument(doc)}
-                                                disabled={isLoadingThis}
-                                                className="p-4 border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 rounded-xl bg-white flex items-center gap-3 transition-all text-xs font-semibold text-slate-700 text-left group shadow-2xs cursor-pointer w-full"
+                                            <div
+                                                key={req.type}
+                                                className="p-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/60 flex items-center gap-3 text-xs text-slate-400"
                                             >
-                                                {isLoadingThis ? (
-                                                    <Loader2 className="text-teal-600 animate-spin flex-shrink-0" size={18} />
-                                                ) : (
-                                                    <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                                                        <Eye size={16} />
-                                                    </div>
-                                                )}
+                                                <div className="w-8 h-8 rounded-lg bg-slate-200/70 text-slate-400 flex items-center justify-center flex-shrink-0">
+                                                    <FileQuestion size={16} />
+                                                </div>
                                                 <div className="truncate flex-1">
-                                                    <span className="block font-bold text-slate-800 group-hover:text-teal-700 transition-colors">{getDocLabel(doc.document_type)}</span>
-                                                    <span className="block text-[11px] text-teal-600 font-medium truncate mt-0.5">
-                                                        {isLoadingThis ? 'Memuat berkas...' : 'Lihat Berkas (Preview)'}
+                                                    <span className="block font-bold text-slate-500">{req.label}</span>
+                                                    <span className="block text-[11px] text-slate-400 font-medium mt-0.5">
+                                                        Belum diunggah
                                                     </span>
                                                 </div>
-                                            </button>
+                                            </div>
                                         );
-                                    })}
-                                </div>
-                            )}
+                                    }
+
+                                    const isLoadingThis = previewLoadingId === doc.id;
+                                    return (
+                                        <button
+                                            key={doc.id}
+                                            type="button"
+                                            onClick={() => handlePreviewDocument(doc)}
+                                            disabled={isLoadingThis}
+                                            className="p-4 border border-slate-200 hover:border-teal-500 hover:bg-teal-50/40 rounded-xl bg-white flex items-center gap-3 transition-all text-xs font-semibold text-slate-700 text-left group shadow-2xs cursor-pointer w-full"
+                                        >
+                                            {isLoadingThis ? (
+                                                <Loader2 className="text-teal-600 animate-spin flex-shrink-0" size={18} />
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                                    <Eye size={16} />
+                                                </div>
+                                            )}
+                                            <div className="truncate flex-1">
+                                                <span className="block font-bold text-slate-800 group-hover:text-teal-700 transition-colors">{getDocLabel(doc.document_type)}</span>
+                                                <span className="block text-[11px] text-teal-600 font-medium truncate mt-0.5">
+                                                    {isLoadingThis ? 'Memuat berkas...' : 'Lihat Berkas (Preview)'}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
 
-                        {/* D. Verification Actions Form */}
+                        {/* E. Verification Actions Form */}
                         <div className="bg-slate-50/40 rounded-xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs">
                             <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-200 pb-2">
                                 <FileCheck size={16} className="text-teal-600" /> Evaluasi & Verifikasi Berkas
@@ -499,7 +625,7 @@ export default function Verification() {
                             </form>
                         </div>
 
-                        {/* E. History Timeline Log list */}
+                        {/* F. History Timeline Log list */}
                         <div className="bg-slate-50/40 rounded-xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs">
                             <h3 className="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-200 pb-2">
                                 <Clock size={16} className="text-teal-600" /> Riwayat Perubahan Berkas
@@ -526,7 +652,7 @@ export default function Verification() {
                 )}
             </div>
 
-            {/* Interactive Document Preview Modal */}
+            {/* Interactive Document Preview Modal with Zoom & Download */}
             {previewDoc && dossier && (
                 <div 
                     className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-3 sm:p-6 animate-in fade-in duration-200"
@@ -537,7 +663,7 @@ export default function Verification() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
-                        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 flex-wrap gap-3">
                             <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold">
                                     <FileText size={18} />
@@ -555,7 +681,40 @@ export default function Verification() {
                                 </div>
                             </div>
 
+                            {/* Actions & Zoom Controls */}
                             <div className="flex items-center gap-2">
+                                {!previewDoc.isPdf && (
+                                    <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700 mr-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setZoomScale((s) => Math.max(0.5, s - 0.25))}
+                                            className="p-1.5 hover:bg-slate-700 rounded text-slate-300 hover:text-white transition cursor-pointer"
+                                            title="Perkecil"
+                                        >
+                                            <ZoomOut size={14} />
+                                        </button>
+                                        <span className="text-xxs font-mono text-slate-300 px-1 font-bold min-w-[36px] text-center">
+                                            {Math.round(zoomScale * 100)}%
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setZoomScale((s) => Math.min(3, s + 0.25))}
+                                            className="p-1.5 hover:bg-slate-700 rounded text-slate-300 hover:text-white transition cursor-pointer"
+                                            title="Perbesar"
+                                        >
+                                            <ZoomIn size={14} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setZoomScale(1)}
+                                            className="p-1.5 hover:bg-slate-700 rounded text-slate-300 hover:text-white transition cursor-pointer"
+                                            title="Reset Ukuran"
+                                        >
+                                            <RotateCcw size={14} />
+                                        </button>
+                                    </div>
+                                )}
+
                                 <a
                                     href={previewDoc.url}
                                     download={previewDoc.fileName}
@@ -586,7 +745,7 @@ export default function Verification() {
                             </div>
                         </div>
 
-                        {/* Modal Body: iframe for PDF, img for Images */}
+                        {/* Modal Body: iframe for PDF, img with zoom for Images */}
                         <div className="flex-1 bg-slate-100 p-3 sm:p-4 overflow-auto flex items-center justify-center min-h-[400px] max-h-[75vh]">
                             {previewDoc.isPdf ? (
                                 <iframe
@@ -595,10 +754,11 @@ export default function Verification() {
                                     title={`Preview ${previewDoc.title}`}
                                 />
                             ) : (
-                                <div className="flex items-center justify-center w-full h-full p-2">
+                                <div className="flex items-center justify-center w-full h-full p-4 overflow-auto">
                                     <img
                                         src={previewDoc.url}
                                         alt={previewDoc.title}
+                                        style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center center', transition: 'transform 0.15s ease' }}
                                         className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-md bg-white border border-slate-200"
                                     />
                                 </div>
@@ -606,8 +766,9 @@ export default function Verification() {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="px-6 py-3 bg-white border-t border-slate-200 flex items-center text-xs text-slate-500">
+                        <div className="px-6 py-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
                             <span>Nama File: <strong className="text-slate-700 font-mono">{previewDoc.fileName}</strong></span>
+                            <span className="text-slate-400">Tekan <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-xxs font-mono">ESC</kbd> untuk menutup</span>
                         </div>
                     </div>
                 </div>

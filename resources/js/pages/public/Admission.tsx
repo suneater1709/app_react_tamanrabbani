@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { BookOpen, User, Users, Upload, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, Calendar, Sparkles, FileText, HelpCircle, FilePlus, ArrowRight, Wallet, Receipt } from 'lucide-react';
+import { BookOpen, User, Users, Upload, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, Calendar, Sparkles, FileText, HelpCircle, FilePlus, ArrowRight, Wallet, Receipt, Copy, Check } from 'lucide-react';
 import { cmsApi } from '../../services/api';
 import axios from 'axios';
 
@@ -223,35 +223,101 @@ export default function Admission() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Calculate dynamic nominal fee based on selected program matching Gambar 1
-    const getProgramNominal = () => {
-        const selectedId = watchProgramId || formData.program_id;
-        if (selectedId === '1' || selectedId === 1 || selectedId === 'pg') {
-            return { fee: 'Rp 450.000', name: 'Playgroup (KB)' };
+    const [feeCalculation, setFeeCalculation] = useState<{
+        entry_fee: number;
+        form_fee: number;
+        discount_amount: number;
+        total_transfer_amount: number;
+        wave_name: string;
+        program_name: string;
+    } | null>(null);
+    const [copiedRekening, setCopiedRekening] = useState(false);
+
+    const copyToClipboard = (text: string) => {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        } else {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            return new Promise<void>((resolve, reject) => {
+                document.execCommand('copy') ? resolve() : reject(new Error('Gagal menyalin'));
+                textArea.remove();
+            });
         }
-        if (selectedId === '2' || selectedId === 2 || selectedId === 'tka') {
-            return { fee: 'Rp 600.000', name: 'TK A' };
-        }
-        if (selectedId === '3' || selectedId === 3 || selectedId === 'tkb') {
-            return { fee: 'Rp 650.000', name: 'TK B' };
-        }
-        
-        // Dynamic matching of program codes if IDs are database auto-increments
-        const selectedProg = programs.find(p => p.id.toString() === selectedId?.toString());
-        if (selectedProg) {
-            if (selectedProg.code.includes('KB') || selectedProg.code.includes('Playgroup')) {
-                return { fee: 'Rp 450.000', name: selectedProg.name };
-            }
-            if (selectedProg.code.includes('TK-A') || selectedProg.code.includes('TK A')) {
-                return { fee: 'Rp 600.000', name: selectedProg.name };
-            }
-            if (selectedProg.code.includes('TK-B') || selectedProg.code.includes('TK B')) {
-                return { fee: 'Rp 650.000', name: selectedProg.name };
-            }
-        }
-        
-        return { fee: 'Rp 650.000', name: 'TK B' };
     };
+
+    const handleCopyRekening = () => {
+        copyToClipboard('7122107207')
+            .then(() => {
+                setCopiedRekening(true);
+                setTimeout(() => setCopiedRekening(false), 2000);
+            })
+            .catch(() => {
+                // fallback
+            });
+    };
+
+    const getCalculatedFee = (progId: any) => {
+        const selectedProg = programs.find(p => p.id.toString() === progId?.toString());
+        const isKb = selectedProg?.code?.toUpperCase().includes('KB') || 
+                     selectedProg?.code?.toUpperCase().includes('PG') || 
+                     progId === '1' || progId === 1 || progId === 'pg';
+        
+        const entryFee = isKb 
+            ? (settings?.ppdb_fee_structure?.kb?.total || 2800000) 
+            : (settings?.ppdb_fee_structure?.tk?.total || 3950000);
+        const formFee = 100000;
+
+        // Active wave
+        const activeWave = (settings?.ppdb_waves || []).find((w: any) => w.is_active);
+        let discount = 400000;
+        if (activeWave) {
+            if (activeWave.discount_amount !== undefined) {
+                discount = Number(activeWave.discount_amount);
+            } else if (activeWave.name?.toLowerCase().includes('3')) {
+                discount = 0;
+            }
+        }
+
+        const total = Math.max(0, entryFee + formFee - discount);
+        return {
+            entry_fee: entryFee,
+            form_fee: formFee,
+            discount_amount: discount,
+            total_transfer_amount: total,
+            wave_name: activeWave?.name || 'Gelombang 1',
+            program_name: selectedProg?.name || (isKb ? 'Kelompok Bermain (KB)' : 'Taman Kanak-Kanak (TK A & TK B)')
+        };
+    };
+
+    // Calculate dynamic nominal fee based on selected program
+    useEffect(() => {
+        const selectedId = watchProgramId || formData.program_id;
+        if (!selectedId) return;
+
+        const numericId = parseInt(selectedId.toString(), 10);
+        if (!isNaN(numericId)) {
+            cmsApi.calculateFee(numericId)
+                .then(res => {
+                    if (res && res.success && res.data) {
+                        setFeeCalculation(res.data);
+                    } else {
+                        setFeeCalculation(getCalculatedFee(selectedId));
+                    }
+                })
+                .catch(() => {
+                    setFeeCalculation(getCalculatedFee(selectedId));
+                });
+        } else {
+            setFeeCalculation(getCalculatedFee(selectedId));
+        }
+    }, [watchProgramId, formData.program_id, settings, step, programs]);
 
     const onSubmitFinal = async () => {
         setSubmitError(null);
@@ -337,6 +403,7 @@ export default function Admission() {
 
     // Success Screen
     if (successReceipt) {
+        const formatRp = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
         return (
             <div className="py-16 max-w-2xl mx-auto px-4 text-center">
                 <div className="bg-white p-8 sm:p-12 rounded-3xl shadow-lg border-none flex flex-col items-center">
@@ -344,10 +411,25 @@ export default function Admission() {
                     <h1 className="text-2xl font-bold text-slate-800 mb-2">Pendaftaran Berhasil!</h1>
                     <p className="text-slate-500 text-xs sm:text-sm mb-6">Pendaftaran atas nama <strong>{successReceipt.full_name}</strong> telah tersimpan di sistem kami.</p>
                     
-                    <div className="w-full bg-slate-50 rounded-2xl p-6 mb-8 text-left border-none">
-                        <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider mb-1">Nomor Registrasi Anda</span>
-                        <span className="text-2xl font-extrabold text-teal-700 tracking-wide">{successReceipt.registration_number}</span>
-                        <div className="mt-4 pt-4 border-t border-slate-200 text-xs text-slate-600 space-y-1">
+                    <div className="w-full bg-slate-50 rounded-2xl p-6 mb-8 text-left border border-slate-100 space-y-4">
+                        <div>
+                            <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider mb-1">Nomor Registrasi Anda</span>
+                            <span className="text-2xl font-extrabold text-teal-700 tracking-wide font-mono">{successReceipt.registration_number}</span>
+                        </div>
+
+                        {successReceipt.total_transfer_amount && (
+                            <div className="bg-teal-50/80 p-4 rounded-xl border border-teal-100 flex justify-between items-center text-xs">
+                                <div>
+                                    <span className="text-teal-800 font-bold block">Total Transfer Pembayaran:</span>
+                                    <span className="text-xxs text-teal-600">Gelombang: {successReceipt.wave_name || 'Gelombang Aktif'}</span>
+                                </div>
+                                <span className="text-base font-extrabold text-teal-800 font-mono">
+                                    {formatRp(successReceipt.total_transfer_amount)}
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="pt-2 border-t border-slate-200 text-xs text-slate-600 space-y-1">
                             <p><strong>Status Pendaftaran:</strong> <span className="px-2.5 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] font-bold rounded-full uppercase">{successReceipt.status}</span></p>
                             <p className="mt-2 text-[10px] text-slate-400">Gunakan nomor registrasi di atas untuk memeriksa status berkas Anda di halaman "Cek Status".</p>
                         </div>
@@ -500,30 +582,29 @@ export default function Admission() {
                             {/* Card 1: Kelompok Bermain (KB) */}
                             {(() => {
                                 const kbFee = settings?.ppdb_fee_structure?.kb || {
-                                    title: 'Kelompok Bermain (Playgroup)',
+                                    title: 'Kelompok Bermain (KB)',
                                     total: 2800000,
                                     items: [
-                                        { name: 'Infaq Pengembangan Gedung & Sarpras', amount: 1200000 },
-                                        { name: 'Seragam Sekolah & Atribut (4 Stel)', amount: 650000 },
-                                        { name: 'Buku Paket Sentra & Bahan Ajar 1 Tahun', amount: 400000 },
-                                        { name: 'SPP Bulan Pertama (Juli)', amount: 450000 },
-                                        { name: 'Kegiatan Outing & Parenting 1 Semester', amount: 100000 },
+                                        { name: 'Infaq Pendidikan', amount: 550000 },
+                                        { name: 'Perlengkapan (1 tahun)', amount: 850000 },
+                                        { name: 'Kegiatan (1 tahun)', amount: 1000000 },
+                                        { name: 'Seragam', amount: 400000 },
                                     ]
                                 };
                                 const formattedTotal = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(kbFee.total || 2800000);
                                 return (
-                                    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-100 flex flex-col justify-between relative overflow-hidden">
+                                    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-slate-200/60 flex flex-col justify-between relative overflow-hidden">
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
-                                                <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xxs font-extrabold uppercase rounded-full">
+                                                <span className="px-3 py-1 bg-amber-50 text-amber-800 text-xxs font-extrabold uppercase rounded-full border border-amber-200/50">
                                                     Usia 3 - 4 Tahun
                                                 </span>
                                                 <Wallet className="text-amber-600" size={22} />
                                             </div>
                                             
-                                            <h3 className="text-lg sm:text-xl font-bold text-slate-800">{kbFee.title}</h3>
+                                            <h3 className="text-lg sm:text-xl font-bold text-slate-800">{kbFee.title || 'Kelompok Bermain (KB)'}</h3>
                                             
-                                            <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-100 flex items-baseline justify-between">
+                                            <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-100 flex items-baseline justify-between">
                                                 <span className="text-xs text-amber-900 font-bold">Total Biaya Masuk:</span>
                                                 <span className="text-xl sm:text-2xl font-extrabold text-amber-700">{formattedTotal}</span>
                                             </div>
@@ -531,8 +612,13 @@ export default function Admission() {
                                             <div className="space-y-2 pt-2">
                                                 <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider block">Rincian Komponen Biaya:</span>
                                                 <div className="space-y-2 text-xs">
-                                                    {(kbFee.items || []).map((item: any, i: number) => (
-                                                        <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                                                    {(kbFee.items || [
+                                                        { name: 'Infaq Pendidikan', amount: 550000 },
+                                                        { name: 'Perlengkapan (1 tahun)', amount: 850000 },
+                                                        { name: 'Kegiatan (1 tahun)', amount: 1000000 },
+                                                        { name: 'Seragam', amount: 400000 },
+                                                    ]).map((item: any, i: number) => (
+                                                        <div key={i} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                                                             <span className="text-slate-600 font-medium">{item.name}</span>
                                                             <span className="text-slate-800 font-bold">
                                                                 {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.amount)}
@@ -544,39 +630,38 @@ export default function Admission() {
                                         </div>
 
                                         <div className="mt-6 pt-4 border-t border-slate-100 text-xxs text-slate-500">
-                                            * Belum termasuk potongan diskon gelombang early bird sebesar s.d Rp 400.000.
+                                            * Dapatkan potongan diskon uang pangkal early bird s.d Rp 400.000 pada gelombang yang berlaku.
                                         </div>
                                     </div>
                                 );
                             })()}
 
-                            {/* Card 2: Taman Kanak-Kanak (TK) */}
+                            {/* Card 2: Taman Kanak-Kanak (TK A & TK B) */}
                             {(() => {
                                 const tkFee = settings?.ppdb_fee_structure?.tk || {
                                     title: 'Taman Kanak-Kanak (TK A & TK B)',
                                     total: 3950000,
                                     items: [
-                                        { name: 'Infaq Pengembangan Gedung & Sarpras', amount: 1900000 },
-                                        { name: 'Seragam Sekolah & Atribut (5 Stel)', amount: 800000 },
-                                        { name: 'Buku Paket, Modul Yanbu\'a & APE', amount: 500000 },
-                                        { name: 'SPP Bulan Pertama (Juli)', amount: 600000 },
-                                        { name: 'Kegiatan Outing, Manasik & PHBI/PHBN', amount: 150000 },
+                                        { name: 'Infaq Pendidikan', amount: 750000 },
+                                        { name: 'Perlengkapan (1 tahun)', amount: 1050000 },
+                                        { name: 'Kegiatan (1 tahun)', amount: 1500000 },
+                                        { name: 'Seragam', amount: 650000 },
                                     ]
                                 };
                                 const formattedTotal = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(tkFee.total || 3950000);
                                 return (
-                                    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-100 flex flex-col justify-between relative overflow-hidden">
+                                    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-slate-200/60 flex flex-col justify-between relative overflow-hidden">
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
-                                                <span className="px-3 py-1 bg-teal-100 text-teal-800 text-xxs font-extrabold uppercase rounded-full">
+                                                <span className="px-3 py-1 bg-teal-50 text-teal-800 text-xxs font-extrabold uppercase rounded-full border border-teal-200/50">
                                                     Usia 4 - 6 Tahun
                                                 </span>
                                                 <Receipt className="text-teal-600" size={22} />
                                             </div>
                                             
-                                            <h3 className="text-lg sm:text-xl font-bold text-slate-800">{tkFee.title}</h3>
+                                            <h3 className="text-lg sm:text-xl font-bold text-slate-800">{tkFee.title || 'Taman Kanak-Kanak (TK A & TK B)'}</h3>
                                             
-                                            <div className="p-4 bg-teal-50/60 rounded-2xl border border-teal-100 flex items-baseline justify-between">
+                                            <div className="p-4 bg-teal-50/70 rounded-2xl border border-teal-100 flex items-baseline justify-between">
                                                 <span className="text-xs text-teal-900 font-bold">Total Biaya Masuk:</span>
                                                 <span className="text-xl sm:text-2xl font-extrabold text-teal-700">{formattedTotal}</span>
                                             </div>
@@ -584,8 +669,13 @@ export default function Admission() {
                                             <div className="space-y-2 pt-2">
                                                 <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider block">Rincian Komponen Biaya:</span>
                                                 <div className="space-y-2 text-xs">
-                                                    {(tkFee.items || []).map((item: any, i: number) => (
-                                                        <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                                                    {(tkFee.items || [
+                                                        { name: 'Infaq Pendidikan', amount: 750000 },
+                                                        { name: 'Perlengkapan (1 tahun)', amount: 1050000 },
+                                                        { name: 'Kegiatan (1 tahun)', amount: 1500000 },
+                                                        { name: 'Seragam', amount: 650000 },
+                                                    ]).map((item: any, i: number) => (
+                                                        <div key={i} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                                                             <span className="text-slate-600 font-medium">{item.name}</span>
                                                             <span className="text-slate-800 font-bold">
                                                                 {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.amount)}
@@ -597,7 +687,7 @@ export default function Admission() {
                                         </div>
 
                                         <div className="mt-6 pt-4 border-t border-slate-100 text-xxs text-slate-500">
-                                            * Termasuk modul tilawati/Yanbu'a dan seragam olahraga, batik, dan muslim.
+                                            * Dapatkan potongan diskon uang pangkal early bird s.d Rp 400.000 pada gelombang yang berlaku.
                                         </div>
                                     </div>
                                 );
@@ -1112,31 +1202,82 @@ export default function Admission() {
                                     </div>
                                 )}
 
-                                {/* Payment instruction box matching Gambar 1 */}
-                                <div className="bg-amber-50/50 p-6 rounded-3xl space-y-4 border-none text-left">
-                                    <h4 className="font-extrabold text-amber-800 text-xs sm:text-sm flex items-center gap-1.5 uppercase tracking-wide">
-                                        <span>⚠️</span>
-                                        <span>Penting: Informasi Pembayaran Pendaftaran</span>
-                                    </h4>
-                                    <p className="text-slate-600 text-xxs sm:text-xs leading-relaxed">
-                                        Silakan melakukan transfer biaya pendaftaran ke rekening berikut:
-                                    </p>
-                                    
-                                    <div className="bg-white p-5 rounded-2xl shadow-sm text-xs sm:text-sm space-y-2 border-none">
-                                        <p className="text-slate-600"><strong>Bank:</strong> Bank Syariah Indonesia (BSI)</p>
-                                        <p className="text-slate-600">
-                                            <strong>Nomor Rekening:</strong>{' '}
-                                            <span className="px-2.5 py-0.5 bg-amber-100 text-amber-850 font-extrabold rounded-lg font-mono tracking-wider text-xs">
-                                                7122107207
-                                            </span>
-                                        </p>
-                                        <p className="text-slate-600"><strong>Atas Nama (an):</strong> Rumi Salam Muhaimin</p>
-                                        <p className="text-slate-600">
-                                            <strong>Nominal:</strong>{' '}
-                                            <span className="font-bold text-teal-700">{settings?.ppdb_form_fee || 'Rp 100.000'}</span>
-                                        </p>
-                                    </div>
-                                </div>
+                                {/* Official 3-line Payment Breakdown & Transfer Information Box (Clean Light Theme) */}
+                                {(() => {
+                                    const calc = feeCalculation || getCalculatedFee(formData.program_id);
+                                    const formatRp = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+                                    return (
+                                        <div className="bg-[#F5FAFF] p-6 sm:p-7 rounded-3xl space-y-5 shadow-xs border border-sky-200/80 text-left">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-sky-200/60 pb-4">
+                                                <div>
+                                                    <span className="text-teal-700 text-xxs font-extrabold uppercase tracking-widest block">Rincian Resmi Pembayaran</span>
+                                                    <h4 className="text-base sm:text-lg font-bold text-slate-800 mt-0.5">
+                                                        Verifikasi Berkas & Uang Masuk PPDB
+                                                    </h4>
+                                                </div>
+                                                {formData.full_name && (
+                                                    <span className="px-3 py-1 bg-white text-teal-800 text-xs font-semibold rounded-full self-start sm:self-auto border border-teal-200/70 shadow-2xs">
+                                                        Calon Siswa: <strong>{formData.full_name}</strong>
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* 3 Calculation Lines */}
+                                            <div className="space-y-2.5 bg-white p-4 sm:p-5 rounded-2xl text-xs border border-sky-100 shadow-2xs">
+                                                <div className="flex justify-between items-center text-slate-600">
+                                                    <span className="font-medium">+ Biaya Masuk {calc.program_name}</span>
+                                                    <span className="font-bold text-slate-800">{formatRp(calc.entry_fee)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-slate-600">
+                                                    <span className="font-medium">+ Biaya Form Pendaftaran</span>
+                                                    <span className="font-bold text-slate-800">{formatRp(calc.form_fee)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-emerald-700">
+                                                    <span className="font-medium">− Diskon Potongan Uang Pangkal ({calc.wave_name})</span>
+                                                    <span className="font-bold">− {formatRp(calc.discount_amount)}</span>
+                                                </div>
+                                                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-sky-50/50 -mx-4 -mb-4 sm:-mx-5 sm:-mb-5 p-4 sm:p-5 rounded-b-2xl">
+                                                    <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-800">
+                                                        TOTAL YANG HARUS DITRANSFER:
+                                                    </span>
+                                                    <span className="text-xl sm:text-2xl font-black text-teal-800 font-mono tracking-tight">
+                                                        {formatRp(calc.total_transfer_amount)}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Destination Bank Account Information with Copy Button */}
+                                            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-sky-100 shadow-2xs space-y-3 text-xs">
+                                                <span className="text-teal-700 text-xxs font-bold uppercase tracking-wider block">Rekening Tujuan Transfer Resmi:</span>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-700">
+                                                    <div>
+                                                        <span className="text-slate-400 text-xxs block">Bank:</span>
+                                                        <strong className="text-slate-800 text-xs sm:text-sm">Bank Syariah Indonesia (BSI)</strong>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-slate-400 text-xxs block">Nomor Rekening:</span>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="font-mono font-bold text-slate-900 text-sm sm:text-base tracking-wider">7122107207</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleCopyRekening}
+                                                                className="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-lg text-xxs font-bold transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
+                                                                title="Salin Nomor Rekening"
+                                                            >
+                                                                {copiedRekening ? <Check size={12} className="text-teal-700" /> : <Copy size={12} />}
+                                                                <span>{copiedRekening ? 'Tersalin ✓' : 'Salin'}</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-slate-400 text-xxs block">Atas Nama (a/n):</span>
+                                                        <strong className="text-slate-800 text-xs sm:text-sm">Rumi Salam Muhaimin</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Testing utility help info */}
                                 <div className="p-4 bg-slate-50 rounded-2xl text-[10px] sm:text-xs text-slate-500 leading-relaxed border-none flex items-start gap-1.5">

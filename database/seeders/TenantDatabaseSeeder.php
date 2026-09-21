@@ -18,6 +18,7 @@ use App\Models\Tenant\StudentDocument;
 use App\Models\Tenant\StudentParent;
 use App\Models\Tenant\StudentStatusLog;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -318,10 +319,36 @@ class TenantDatabaseSeeder extends Seeder
         ]);
 
         // 10. Seed Pendaftar (Applicants)
-        if (Pendaftar::count() === 0) {
-            // Applicant 1: Pending
-            $pendaftar1 = Pendaftar::create([
-                'registration_number' => 'TR-2027-0001',
+        $createSampleFile = function (string $path, string $type = 'pdf') {
+            if ($type === 'pdf') {
+                $content = "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << >> >>\nendobj\n4 0 obj\n<< /Length 44 >>\nstream\nBT /F1 24 Tf 100 700 Td (Dokumen Siswa PPDB) ET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000216 00000 n \ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n310\n%%EOF";
+            } else {
+                $content = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAYZJREFUeJztwTEBAAAAwqD1T20ND6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAF8GdwAB4n0G3wAAAABJRU5ErkJggg==');
+            }
+            Storage::disk('public')->put($path, $content);
+        };
+
+        // Applicant 1: Pending (TK A)
+        $tkABreakdown = [
+            'program_name' => 'Taman Kanak-Kanak A (TK A)',
+            'program_code' => 'TK-A',
+            'is_kb' => false,
+            'entry_fee_label' => 'Biaya Masuk Taman Kanak-Kanak A (TK A)',
+            'entry_fee' => 3950000,
+            'form_fee_label' => 'Biaya Form Pendaftaran',
+            'form_fee' => 100000,
+            'discount_label' => 'Diskon Potongan Uang Pangkal',
+            'discount_amount' => 400000,
+            'total_transfer_amount' => 3650000,
+            'wave_name' => 'Gelombang 1 (Early Bird)',
+            'bank_name' => 'Bank Syariah Indonesia (BSI)',
+            'bank_account_number' => '7122107207',
+            'bank_account_holder' => 'Rumi Salam Muhaimin',
+        ];
+
+        $pendaftar1 = Pendaftar::updateOrCreate(
+            ['registration_number' => 'TR-2027-0001'],
+            [
                 'program_id' => $progModels['TK-A']->id,
                 'email' => 'parent1@example.com',
                 'phone' => '0812-1111-2222',
@@ -335,62 +362,87 @@ class TenantDatabaseSeeder extends Seeder
                 'address' => 'Perum Taman Robbani Indah Blok A4/12, Buduran, Sidoarjo',
                 'previous_school' => 'KB Al-Ikhlas Sidoarjo',
                 'status' => 'pending',
-            ]);
+                'entry_fee' => 3950000,
+                'form_fee' => 100000,
+                'discount_amount' => 400000,
+                'total_transfer_amount' => 3650000,
+                'wave_name' => 'Gelombang 1 (Early Bird)',
+                'payment_breakdown' => $tkABreakdown,
+            ]
+        );
 
-            StudentParent::create([
-                'pendaftar_id' => $pendaftar1->id,
-                'type' => 'father',
+        StudentParent::updateOrCreate(
+            ['pendaftar_id' => $pendaftar1->id, 'type' => 'father'],
+            [
                 'name' => 'Ahmad Robbani',
                 'occupation' => 'Wiraswasta',
                 'education' => 'S1 Teknik Informatika',
                 'phone' => '0812-1111-2222',
                 'email' => 'ahmad.parent1@example.com',
                 'income' => 'Rp 5.000.000 - Rp 10.000.000',
-            ]);
+            ]
+        );
 
-            StudentParent::create([
-                'pendaftar_id' => $pendaftar1->id,
-                'type' => 'mother',
+        StudentParent::updateOrCreate(
+            ['pendaftar_id' => $pendaftar1->id, 'type' => 'mother'],
+            [
                 'name' => 'Siti Aminah',
                 'occupation' => 'Ibu Rumah Tangga',
                 'education' => 'D3 Kebidanan',
                 'phone' => '0812-3333-4444',
                 'email' => 'siti.parent1@example.com',
                 'income' => 'Tidak Ada Pendapatan',
-            ]);
+            ]
+        );
 
-            StudentDocument::create([
-                'pendaftar_id' => $pendaftar1->id,
-                'document_type' => 'birth_certificate',
-                'file_path' => 'documents/TR-2027-0001/birth_certificate.pdf',
-                'file_size' => 102450,
-            ]);
+        $createSampleFile('documents/TR-2027-0001/birth_certificate.pdf', 'pdf');
+        $createSampleFile('documents/TR-2027-0001/family_card.pdf', 'pdf');
+        $createSampleFile('documents/TR-2027-0001/photo.jpg', 'jpg');
+        $createSampleFile('documents/TR-2027-0001/payment_receipt.jpg', 'jpg');
 
-            StudentDocument::create([
-                'pendaftar_id' => $pendaftar1->id,
-                'document_type' => 'family_card',
-                'file_path' => 'documents/TR-2027-0001/family_card.pdf',
-                'file_size' => 205600,
-            ]);
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar1->id, 'document_type' => 'birth_certificate'],
+            ['file_path' => 'documents/TR-2027-0001/birth_certificate.pdf', 'file_size' => 102450]
+        );
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar1->id, 'document_type' => 'family_card'],
+            ['file_path' => 'documents/TR-2027-0001/family_card.pdf', 'file_size' => 205600]
+        );
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar1->id, 'document_type' => 'photo'],
+            ['file_path' => 'documents/TR-2027-0001/photo.jpg', 'file_size' => 84200]
+        );
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar1->id, 'document_type' => 'payment_receipt'],
+            ['file_path' => 'documents/TR-2027-0001/payment_receipt.jpg', 'file_size' => 125000]
+        );
 
-            StudentDocument::create([
-                'pendaftar_id' => $pendaftar1->id,
-                'document_type' => 'photo',
-                'file_path' => 'documents/TR-2027-0001/photo.jpg',
-                'file_size' => 84200,
-            ]);
+        StudentStatusLog::firstOrCreate(
+            ['pendaftar_id' => $pendaftar1->id, 'new_status' => 'pending'],
+            ['old_status' => 'pending', 'notes' => 'Pendaftaran online berhasil dikirim.']
+        );
 
-            StudentStatusLog::create([
-                'pendaftar_id' => $pendaftar1->id,
-                'old_status' => 'pending',
-                'new_status' => 'pending',
-                'changed_by' => null,
-                'notes' => 'Pendaftaran online berhasil dikirim.',
-            ]);
+        // Applicant 2: Revision (KB)
+        $kbBreakdown = [
+            'program_name' => 'Kelompok Bermain (Playgroup)',
+            'program_code' => 'KB',
+            'is_kb' => true,
+            'entry_fee_label' => 'Biaya Masuk Kelompok Bermain',
+            'entry_fee' => 2800000,
+            'form_fee_label' => 'Biaya Form Pendaftaran',
+            'form_fee' => 100000,
+            'discount_label' => 'Diskon Potongan Uang Pangkal',
+            'discount_amount' => 400000,
+            'total_transfer_amount' => 2500000,
+            'wave_name' => 'Gelombang 1 (Early Bird)',
+            'bank_name' => 'Bank Syariah Indonesia (BSI)',
+            'bank_account_number' => '7122107207',
+            'bank_account_holder' => 'Rumi Salam Muhaimin',
+        ];
 
-            // Applicant 2: Revision
-            $pendaftar2 = Pendaftar::create([
-                'registration_number' => 'TR-2027-0002',
+        $pendaftar2 = Pendaftar::updateOrCreate(
+            ['registration_number' => 'TR-2027-0002'],
+            [
                 'program_id' => $progModels['KB']->id,
                 'email' => 'parent2@example.com',
                 'phone' => '0812-2222-3333',
@@ -404,70 +456,88 @@ class TenantDatabaseSeeder extends Seeder
                 'address' => 'Jl. Pahlawan Gg. 3 No. 45, Sidoarjo',
                 'previous_school' => null,
                 'status' => 'revision',
+                'entry_fee' => 2800000,
+                'form_fee' => 100000,
+                'discount_amount' => 400000,
+                'total_transfer_amount' => 2500000,
+                'wave_name' => 'Gelombang 1 (Early Bird)',
+                'payment_breakdown' => $kbBreakdown,
                 'verifier_notes' => 'File scan Kartu Keluarga kurang jelas, mohon diunggah kembali yang terlihat jelas.',
-            ]);
+            ]
+        );
 
-            StudentParent::create([
-                'pendaftar_id' => $pendaftar2->id,
-                'type' => 'father',
+        StudentParent::updateOrCreate(
+            ['pendaftar_id' => $pendaftar2->id, 'type' => 'father'],
+            [
                 'name' => 'Rachmat Hidayat',
                 'occupation' => 'Pegawai Swasta',
                 'education' => 'S1 Manajemen',
                 'phone' => '0812-2222-3333',
                 'email' => 'rachmat.parent2@example.com',
                 'income' => 'Rp 3.000.000 - Rp 5.000.000',
-            ]);
+            ]
+        );
 
-            StudentParent::create([
-                'pendaftar_id' => $pendaftar2->id,
-                'type' => 'mother',
+        StudentParent::updateOrCreate(
+            ['pendaftar_id' => $pendaftar2->id, 'type' => 'mother'],
+            [
                 'name' => 'Lailatul Fitri',
                 'occupation' => 'Guru',
                 'education' => 'S1 PGSD',
                 'phone' => '0812-4444-5555',
                 'email' => 'laila.parent2@example.com',
                 'income' => 'Rp 1.500.000 - Rp 3.000.000',
-            ]);
+            ]
+        );
 
-            StudentDocument::create([
-                'pendaftar_id' => $pendaftar2->id,
-                'document_type' => 'birth_certificate',
-                'file_path' => 'documents/TR-2027-0002/birth_certificate.pdf',
-                'file_size' => 98400,
-            ]);
+        $createSampleFile('documents/TR-2027-0002/birth_certificate.pdf', 'pdf');
+        $createSampleFile('documents/TR-2027-0002/family_card.pdf', 'pdf');
+        $createSampleFile('documents/TR-2027-0002/photo.jpg', 'jpg');
+        $createSampleFile('documents/TR-2027-0002/payment_receipt.jpg', 'jpg');
 
-            StudentDocument::create([
-                'pendaftar_id' => $pendaftar2->id,
-                'document_type' => 'family_card',
-                'file_path' => 'documents/TR-2027-0002/family_card.pdf',
-                'file_size' => 194300,
-            ]);
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar2->id, 'document_type' => 'birth_certificate'],
+            ['file_path' => 'documents/TR-2027-0002/birth_certificate.pdf', 'file_size' => 98400]
+        );
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar2->id, 'document_type' => 'family_card'],
+            ['file_path' => 'documents/TR-2027-0002/family_card.pdf', 'file_size' => 194300]
+        );
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar2->id, 'document_type' => 'photo'],
+            ['file_path' => 'documents/TR-2027-0002/photo.jpg', 'file_size' => 76200]
+        );
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar2->id, 'document_type' => 'payment_receipt'],
+            ['file_path' => 'documents/TR-2027-0002/payment_receipt.jpg', 'file_size' => 110000]
+        );
 
-            StudentDocument::create([
-                'pendaftar_id' => $pendaftar2->id,
-                'document_type' => 'photo',
-                'file_path' => 'documents/TR-2027-0002/photo.jpg',
-                'file_size' => 76200,
-            ]);
+        StudentStatusLog::firstOrCreate(
+            ['pendaftar_id' => $pendaftar2->id, 'new_status' => 'revision'],
+            ['old_status' => 'pending', 'changed_by' => 2, 'notes' => 'File scan Kartu Keluarga kurang jelas, mohon diunggah kembali yang terlihat jelas.']
+        );
 
-            StudentStatusLog::create([
-                'pendaftar_id' => $pendaftar2->id,
-                'old_status' => 'pending',
-                'new_status' => 'pending',
-                'notes' => 'Pendaftaran online berhasil dikirim.',
-            ]);
+        // Applicant 3: Accepted (TK B)
+        $tkBBreakdown = [
+            'program_name' => 'Taman Kanak-Kanak B (TK B)',
+            'program_code' => 'TK-B',
+            'is_kb' => false,
+            'entry_fee_label' => 'Biaya Masuk Taman Kanak-Kanak B (TK B)',
+            'entry_fee' => 3950000,
+            'form_fee_label' => 'Biaya Form Pendaftaran',
+            'form_fee' => 100000,
+            'discount_label' => 'Diskon Potongan Uang Pangkal',
+            'discount_amount' => 400000,
+            'total_transfer_amount' => 3650000,
+            'wave_name' => 'Gelombang 1 (Early Bird)',
+            'bank_name' => 'Bank Syariah Indonesia (BSI)',
+            'bank_account_number' => '7122107207',
+            'bank_account_holder' => 'Rumi Salam Muhaimin',
+        ];
 
-            StudentStatusLog::create([
-                'pendaftar_id' => $pendaftar2->id,
-                'old_status' => 'pending',
-                'new_status' => 'revision',
-                'changed_by' => 2, // Verifier
-                'notes' => 'File scan Kartu Keluarga kurang jelas, mohon diunggah kembali yang terlihat jelas.',
-            ]);
-
-            // Applicant 3: Accepted
-            $pendaftar3 = Pendaftar::create([
-                'registration_number' => 'TR-2027-0003',
+        $pendaftar3 = Pendaftar::updateOrCreate(
+            ['registration_number' => 'TR-2027-0003'],
+            [
                 'program_id' => $progModels['TK-B']->id,
                 'email' => 'parent3@example.com',
                 'phone' => '0812-3333-4444',
@@ -481,66 +551,65 @@ class TenantDatabaseSeeder extends Seeder
                 'address' => 'Perumahan Sidoarjo Permai C/9, Candi, Sidoarjo',
                 'previous_school' => 'KB IT Robbani',
                 'status' => 'accepted',
+                'entry_fee' => 3950000,
+                'form_fee' => 100000,
+                'discount_amount' => 400000,
+                'total_transfer_amount' => 3650000,
+                'wave_name' => 'Gelombang 1 (Early Bird)',
+                'payment_breakdown' => $tkBBreakdown,
                 'verifier_notes' => 'Seluruh dokumen lengkap dan valid. Selamat datang di KB-TK IT Taman Robbani Sidoarjo!',
-            ]);
+            ]
+        );
 
-            StudentParent::create([
-                'pendaftar_id' => $pendaftar3->id,
-                'type' => 'father',
+        StudentParent::updateOrCreate(
+            ['pendaftar_id' => $pendaftar3->id, 'type' => 'father'],
+            [
                 'name' => 'Supriyono',
                 'occupation' => 'PNS',
                 'education' => 'S2 Administrasi Publik',
                 'phone' => '0812-3333-4444',
                 'email' => 'supri.parent3@example.com',
                 'income' => 'Rp 5.000.000 - Rp 10.000.000',
-            ]);
+            ]
+        );
 
-            StudentParent::create([
-                'pendaftar_id' => $pendaftar3->id,
-                'type' => 'mother',
+        StudentParent::updateOrCreate(
+            ['pendaftar_id' => $pendaftar3->id, 'type' => 'mother'],
+            [
                 'name' => 'Dwi Lestari',
                 'occupation' => 'Apoteker',
                 'education' => 'S1 Farmasi',
                 'phone' => '0812-5555-6666',
                 'email' => 'dwi.parent3@example.com',
                 'income' => 'Rp 3.000.000 - Rp 5.000.000',
-            ]);
+            ]
+        );
 
-            StudentDocument::create([
-                'pendaftar_id' => $pendaftar3->id,
-                'document_type' => 'birth_certificate',
-                'file_path' => 'documents/TR-2027-0003/birth_certificate.pdf',
-                'file_size' => 112000,
-            ]);
+        $createSampleFile('documents/TR-2027-0003/birth_certificate.pdf', 'pdf');
+        $createSampleFile('documents/TR-2027-0003/family_card.pdf', 'pdf');
+        $createSampleFile('documents/TR-2027-0003/photo.jpg', 'jpg');
+        $createSampleFile('documents/TR-2027-0003/payment_receipt.jpg', 'jpg');
 
-            StudentDocument::create([
-                'pendaftar_id' => $pendaftar3->id,
-                'document_type' => 'family_card',
-                'file_path' => 'documents/TR-2027-0003/family_card.pdf',
-                'file_size' => 220000,
-            ]);
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar3->id, 'document_type' => 'birth_certificate'],
+            ['file_path' => 'documents/TR-2027-0003/birth_certificate.pdf', 'file_size' => 112000]
+        );
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar3->id, 'document_type' => 'family_card'],
+            ['file_path' => 'documents/TR-2027-0003/family_card.pdf', 'file_size' => 220000]
+        );
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar3->id, 'document_type' => 'photo'],
+            ['file_path' => 'documents/TR-2027-0003/photo.jpg', 'file_size' => 90500]
+        );
+        StudentDocument::updateOrCreate(
+            ['pendaftar_id' => $pendaftar3->id, 'document_type' => 'payment_receipt'],
+            ['file_path' => 'documents/TR-2027-0003/payment_receipt.jpg', 'file_size' => 140000]
+        );
 
-            StudentDocument::create([
-                'pendaftar_id' => $pendaftar3->id,
-                'document_type' => 'photo',
-                'file_path' => 'documents/TR-2027-0003/photo.jpg',
-                'file_size' => 90500,
-            ]);
-
-            StudentStatusLog::create([
-                'pendaftar_id' => $pendaftar3->id,
-                'old_status' => 'pending',
-                'new_status' => 'pending',
-                'notes' => 'Pendaftaran online berhasil dikirim.',
-            ]);
-
-            StudentStatusLog::create([
-                'pendaftar_id' => $pendaftar3->id,
-                'old_status' => 'pending',
-                'new_status' => 'accepted',
-                'changed_by' => 1, // Admin
-                'notes' => 'Seluruh dokumen lengkap dan valid. Selamat datang di KB-TK IT Taman Robbani Sidoarjo!',
-            ]);
-        }
+        StudentStatusLog::firstOrCreate(
+            ['pendaftar_id' => $pendaftar3->id, 'new_status' => 'accepted'],
+            ['old_status' => 'pending', 'changed_by' => 1, 'notes' => 'Seluruh dokumen lengkap dan valid. Selamat datang di KB-TK IT Taman Robbani Sidoarjo!']
+        );
     }
 }

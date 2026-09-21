@@ -224,15 +224,14 @@ export default function Programs() {
                                     </div>
                                 </div>
 
-                                <div className="border-t border-slate-100 mt-6 pt-4 flex justify-between items-center">
-                                    <span className="text-xs font-bold text-teal-700">{prog.fee}</span>
+                                <div className="border-t border-slate-100 mt-6 pt-4 flex justify-end items-center">
                                     <button 
                                         type="button"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setSelectedModalProgram(prog);
                                         }}
-                                        className="text-xs font-bold text-teal-600 group-hover:text-teal-800 flex items-center gap-1 cursor-pointer bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-xl transition"
+                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700 hover:text-teal-900 bg-teal-50/90 hover:bg-teal-100/90 px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs"
                                     >
                                         <span>Lihat Detail Kelas</span>
                                         <ChevronRight size={14} />
@@ -355,9 +354,6 @@ export default function Programs() {
                                     </span>
                                     <span className="px-3 py-1 bg-blue-50 text-blue-800 text-xxs font-bold rounded-full">
                                         Jam: {selectedModalProgram.schedule}
-                                    </span>
-                                    <span className="px-3 py-1 bg-amber-50 text-amber-800 text-xxs font-bold rounded-full">
-                                        Biaya: {selectedModalProgram.fee}
                                     </span>
                                 </div>
                                 <h3 className="text-xl sm:text-2xl font-extrabold text-slate-800">

@@ -61,7 +61,8 @@ class CmsController extends Controller
             ->orderBy('id', 'asc')
             ->get();
 
-        $extracurriculars = Extracurricular::orderBy('order', 'asc')
+        $extracurriculars = Extracurricular::where('is_active', true)
+            ->orderBy('order', 'asc')
             ->orderBy('id', 'asc')
             ->get();
 
@@ -150,14 +151,16 @@ class CmsController extends Controller
                 'period' => 'Juli s.d September 2026',
                 'badge' => 'Diskon Rp 400.000',
                 'note' => '* Potongan Uang Pangkal Sebesar Rp 400.000!',
+                'discount' => 400000,
                 'is_active' => true,
             ],
             [
                 'id' => '2',
                 'name' => 'Gelombang 2 (Reguler)',
                 'period' => 'Oktober s.d Desember 2026',
-                'badge' => '',
-                'note' => '',
+                'badge' => 'Diskon Rp 400.000',
+                'note' => '* Potongan Uang Pangkal Sebesar Rp 400.000!',
+                'discount' => 400000,
                 'is_active' => false,
             ],
             [
@@ -166,6 +169,7 @@ class CmsController extends Controller
                 'period' => 'Januari s.d Juni 2027',
                 'badge' => '',
                 'note' => '* Dibuka apabila kuota kelas masih tersedia.',
+                'discount' => 0,
                 'is_active' => false,
             ],
         ];
@@ -173,6 +177,9 @@ class CmsController extends Controller
         $defaultFees = [
             'kb' => [
                 'name' => 'Kelompok Bermain (KB)',
+                'title' => 'Kelompok Bermain (KB)',
+                'age' => 'Usia 3 - 4 Tahun',
+                'total' => 2800000,
                 'items' => [
                     ['name' => 'Infaq Pendidikan', 'amount' => 550000],
                     ['name' => 'Perlengkapan (1 tahun)', 'amount' => 850000],
@@ -182,8 +189,11 @@ class CmsController extends Controller
             ],
             'tk' => [
                 'name' => 'Taman Kanak-Kanak (TK A & TK B)',
+                'title' => 'Taman Kanak-Kanak (TK A & TK B)',
+                'age' => 'Usia 4 - 6 Tahun',
+                'total' => 3950000,
                 'items' => [
-                    ['name' => 'Infaq Pendidikan (2 tahun)', 'amount' => 750000],
+                    ['name' => 'Infaq Pendidikan', 'amount' => 750000],
                     ['name' => 'Perlengkapan (1 tahun)', 'amount' => 1050000],
                     ['name' => 'Kegiatan (1 tahun)', 'amount' => 1500000],
                     ['name' => 'Seragam', 'amount' => 650000],
