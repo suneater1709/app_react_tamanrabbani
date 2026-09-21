@@ -376,28 +376,30 @@ export default function CurriculumSection({ className = '', showShadow = true }:
                                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                             >
                                 {(curriculumData[modalCategory] || []).filter(item => item.is_active !== false).map((prog, idx) => (
-                                    <div key={prog.id || idx} className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-2 hover:bg-slate-50 transition-colors">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="font-bold text-sm text-slate-800 flex items-center gap-2">
-                                                <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-xxs flex items-center justify-center font-bold flex-shrink-0">
+                                    <div key={prog.id || idx} className="p-3.5 sm:p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-2 hover:bg-slate-50 transition-colors">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                                            <div className="flex items-start sm:items-center gap-2">
+                                                <span className="w-5 h-5 rounded-full bg-teal-600 text-white text-xxs flex items-center justify-center font-bold flex-shrink-0 mt-0.5 sm:mt-0">
                                                     {idx + 1}
                                                 </span>
-                                                <span>{prog.title}</span>
-                                            </span>
+                                                <span className="font-bold text-xs sm:text-sm text-slate-800 leading-snug">
+                                                    {prog.title}
+                                                </span>
+                                            </div>
                                             {(prog.frequency || prog.time_allocation) && (
-                                                <span className="px-2 py-0.5 bg-white text-slate-600 rounded-full text-[10px] font-semibold flex items-center gap-1 border border-slate-200/60 shadow-2xs flex-shrink-0">
+                                                <span className="self-start sm:self-auto inline-flex items-center gap-1 px-2.5 py-0.5 bg-white text-slate-600 rounded-md text-[10px] font-semibold border border-slate-200/60 shadow-2xs">
                                                     <Clock size={10} className="text-teal-600 flex-shrink-0" />
                                                     <span>{prog.frequency || prog.time_allocation}</span>
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-slate-600 leading-relaxed pl-7">
+                                        <p className="text-xs text-slate-600 leading-relaxed pl-0 sm:pl-7">
                                             {prog.description || 'Program kurikulum dan pembiasaan terpadu KB-TK IT Taman Robbani.'}
                                         </p>
                                         {prog.target_audience && (
-                                            <div className="pl-7 pt-1 text-xxs text-teal-700 font-medium flex items-center gap-1">
-                                                <Users size={11} />
-                                                <span>Sasaran: {prog.target_audience}</span>
+                                            <div className="pl-0 sm:pl-7 pt-0.5 text-xxs text-teal-700 font-bold flex items-center gap-1">
+                                                <Users size={11} className="flex-shrink-0" />
+                                                <span>Sasaran: <span className="text-slate-700">{prog.target_audience}</span></span>
                                             </div>
                                         )}
                                     </div>

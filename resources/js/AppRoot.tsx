@@ -32,10 +32,12 @@ import AdminExport from './pages/admin/Export';
 import AdminGoogleSheet from './pages/admin/GoogleSheet';
 import AdminSettings from './pages/admin/Settings';
 import NotFound from './pages/public/NotFound';
+import ScrollToTop from './components/ScrollToTop';
 
 export default function AppRoot() {
     return (
         <BrowserRouter>
+            <ScrollToTop />
             <Routes>
                 {/* Public Portal Routes */}
                 <Route path="/" element={<PublicLayout />}>
