@@ -103,6 +103,7 @@ Route::prefix('v1')->group(function () {
             // Settings & Logos (Section B)
             Route::get('settings/logos', [AdminSettingController::class, 'getSettings']);
             Route::post('settings/logos/upload', [AdminSettingController::class, 'uploadLogo']);
+            Route::post('settings/school-profile', [AdminSettingController::class, 'updateSchoolProfile']);
             Route::get('settings/ppdb', [AdminSettingController::class, 'getPpdbSettings']);
             Route::post('settings/ppdb', [AdminSettingController::class, 'updatePpdbSettings']);
             Route::put('settings/ppdb', [AdminSettingController::class, 'updatePpdbSettings']);

@@ -68,7 +68,19 @@ export default function Login() {
                 <div className="flex flex-col items-center text-center mb-8">
                     {/* School Logo */}
                     {schoolLogo ? (
-                        <img src={schoolLogo} alt="Logo KB-TK IT Taman Robbani" className="w-16 h-16 object-contain mb-4" />
+                        <img 
+                            src={schoolLogo} 
+                            alt="Logo KB-TK IT Taman Robbani" 
+                            className="w-16 h-16 object-contain mb-4" 
+                            onError={(e) => {
+                                const target = e.currentTarget;
+                                if (!target.src.endsWith('/images/logo.png')) {
+                                    target.src = '/images/logo.png';
+                                } else {
+                                    target.style.display = 'none';
+                                }
+                            }}
+                        />
                     ) : (
                         <div className="w-16 h-16 text-teal-650 mb-4">
                             <svg viewBox="0 0 100 100" className="w-full h-full fill-current">

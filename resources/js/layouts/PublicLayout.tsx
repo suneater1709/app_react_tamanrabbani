@@ -61,14 +61,19 @@ export default function PublicLayout() {
                             {logoLanding ? (
                                 <img 
                                     src={logoLanding} 
-                                    alt="Logo" 
-                                    className="h-9 sm:h-10 object-contain" 
+                                    alt="Logo KB-TK IT Taman Robbani" 
+                                    className="h-9 sm:h-10 w-auto object-contain" 
                                     onError={(e) => {
-                                        (e.target as HTMLElement).style.display = 'none';
+                                        const target = e.currentTarget;
+                                        if (!target.src.endsWith('/images/logo.png')) {
+                                            target.src = '/images/logo.png';
+                                        } else {
+                                            target.style.display = 'none';
+                                        }
                                     }}
                                 />
                             ) : (
-                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold text-base sm:text-lg font-display shadow-xs group-hover:bg-teal-700 transition">
+                                <div className="w-9 h-9 sm:h-10 sm:w-10 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold text-base sm:text-lg font-display shadow-xs group-hover:bg-teal-700 transition">
                                     TR
                                 </div>
                             )}

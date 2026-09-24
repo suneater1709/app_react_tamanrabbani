@@ -3,7 +3,7 @@ import {
     ShieldCheck, Plus, UserPlus, Image, HelpCircle, Loader2, 
     Save, Trash2, Edit, Calendar, Sparkles, CheckCircle2, 
     Tag, FileText, Check, AlertCircle, Eye, RefreshCw, Wallet, Receipt, DollarSign,
-    Upload, Download, FileDown, ExternalLink
+    Upload, Download, FileDown, ExternalLink, Phone, Mail, MapPin, Building2
 } from 'lucide-react';
 import axios from 'axios';
 import { adminApi } from '../../services/api';
@@ -120,6 +120,15 @@ export default function Settings() {
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [logoSuccessMsg, setLogoSuccessMsg] = useState<string | null>(null);
     const [logoErrorMsg, setLogoErrorMsg] = useState<string | null>(null);
+
+    // Section 2B: School Contact & Profile State
+    const [schoolName, setSchoolName] = useState('KB-TK IT Taman Robbani Sidoarjo');
+    const [schoolPhone, setSchoolPhone] = useState('0816503293');
+    const [schoolEmail, setSchoolEmail] = useState('tamanrobbani23@gmail.com');
+    const [schoolAddress, setSchoolAddress] = useState('Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo');
+    const [savingSchoolProfile, setSavingSchoolProfile] = useState(false);
+    const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
+    const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
 
     // Section 3: Admin list & form state
     const [admins, setAdmins] = useState<AdminUser[]>([]);
@@ -367,7 +376,7 @@ export default function Settings() {
         setPpdbWaves(next);
     };
 
-    // 2. Fetch Active Logo Settings
+    // 2. Fetch Active Logo & School Settings
     const fetchLogos = () => {
         const token = localStorage.getItem('admin_token');
         axios.get('/api/v1/admin/settings/logos', {
@@ -378,9 +387,43 @@ export default function Settings() {
                 const logoUrl = res.data.data.school_logo || res.data.data.logo_landing || '';
                 setSchoolLogo(logoUrl);
                 setPreviewLogo(logoUrl);
+                if (res.data.data.school_name) setSchoolName(res.data.data.school_name);
+                if (res.data.data.school_phone) setSchoolPhone(res.data.data.school_phone);
+                if (res.data.data.school_email) setSchoolEmail(res.data.data.school_email);
+                if (res.data.data.school_address) setSchoolAddress(res.data.data.school_address);
             }
         })
         .catch((err) => console.error(err));
+    };
+
+    // Handle School Profile / Contact Info Submit
+    const handleSaveSchoolProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingSchoolProfile(true);
+        setProfileSuccessMsg(null);
+        setProfileErrorMsg(null);
+
+        const token = localStorage.getItem('admin_token');
+        try {
+            const res = await axios.post('/api/v1/admin/settings/school-profile', {
+                school_name: schoolName,
+                school_phone: schoolPhone,
+                school_email: schoolEmail,
+                school_address: schoolAddress,
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.data.success) {
+                setProfileSuccessMsg('Informasi profil dan nomor kontak sekolah berhasil disimpan! Perubahan langsung berlaku di footer, halaman kontak, dan profil.');
+                fetchLogos();
+                setTimeout(() => setProfileSuccessMsg(null), 5000);
+            }
+        } catch (err: any) {
+            console.error(err);
+            setProfileErrorMsg(err.response?.data?.message || 'Gagal menyimpan informasi profil & kontak sekolah.');
+        } finally {
+            setSavingSchoolProfile(false);
+        }
     };
 
     // Handle Unified Logo Upload Submit
@@ -823,15 +866,15 @@ export default function Settings() {
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* KB FEE EDITOR */}
-                                <div className="p-5 bg-amber-50/40 rounded-2xl border border-amber-200/80 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="w-8 h-8 rounded-xl bg-amber-500 text-white font-bold text-xs flex items-center justify-center">
+                                <div className="p-4 sm:p-5 bg-amber-50/40 rounded-2xl border border-amber-200/80 space-y-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-amber-200/60">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <span className="w-8 h-8 rounded-xl bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                                                 KB
                                             </span>
-                                            <div>
-                                                <h3 className="font-bold text-slate-800 text-sm">{ppdbFeeStructure.kb.title}</h3>
-                                                <span className="text-xxs text-amber-900 font-bold">
+                                            <div className="min-w-0">
+                                                <h3 className="font-bold text-slate-800 text-xs sm:text-sm truncate">{ppdbFeeStructure.kb.title}</h3>
+                                                <span className="text-[11px] text-amber-900 font-extrabold block">
                                                     Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
                                                         ppdbFeeStructure.kb.items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)
                                                     )}
@@ -841,55 +884,57 @@ export default function Settings() {
                                         <button
                                             type="button"
                                             onClick={() => handleAddFeeItem('kb')}
-                                            className="px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xxs rounded-lg flex items-center gap-1 transition"
+                                            className="w-full sm:w-auto px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xxs rounded-xl flex items-center justify-center gap-1.5 transition shrink-0 cursor-pointer shadow-xs"
                                         >
-                                            <Plus size={13} /> Tambah Item
+                                            <Plus size={13} /> <span>Tambah Item</span>
                                         </button>
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         {ppdbFeeStructure.kb.items.map((item, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-100 shadow-xs">
+                                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-amber-100 shadow-xs">
                                                 <input
                                                     type="text"
                                                     value={item.name}
                                                     onChange={(e) => handleFeeItemChange('kb', idx, 'name', e.target.value)}
                                                     placeholder="Nama Komponen Biaya"
-                                                    className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
+                                                    className="w-full sm:flex-1 min-w-0 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:border-amber-500 focus:outline-none"
                                                 />
-                                                <div className="relative w-36">
-                                                    <span className="absolute left-2.5 top-1.5 text-slate-400 text-xs font-bold">Rp</span>
-                                                    <input
-                                                        type="number"
-                                                        value={item.amount}
-                                                        onChange={(e) => handleFeeItemChange('kb', idx, 'amount', e.target.value)}
-                                                        placeholder="0"
-                                                        className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800"
-                                                    />
+                                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                    <div className="relative flex-1 sm:w-36 min-w-0">
+                                                        <span className="absolute left-2.5 top-1.5 text-slate-400 text-xs font-bold pointer-events-none">Rp</span>
+                                                        <input
+                                                            type="number"
+                                                            value={item.amount}
+                                                            onChange={(e) => handleFeeItemChange('kb', idx, 'amount', e.target.value)}
+                                                            placeholder="0"
+                                                            className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveFeeItem('kb', idx)}
+                                                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition shrink-0 cursor-pointer"
+                                                        title="Hapus baris"
+                                                    >
+                                                        <Trash2 size={15} />
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveFeeItem('kb', idx)}
-                                                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition"
-                                                    title="Hapus baris"
-                                                >
-                                                    <Trash2 size={15} />
-                                                </button>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* TK FEE EDITOR */}
-                                <div className="p-5 bg-teal-50/40 rounded-2xl border border-teal-200/80 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="w-8 h-8 rounded-xl bg-teal-600 text-white font-bold text-xs flex items-center justify-center">
+                                <div className="p-4 sm:p-5 bg-teal-50/40 rounded-2xl border border-teal-200/80 space-y-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-teal-200/60">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <span className="w-8 h-8 rounded-xl bg-teal-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                                                 TK
                                             </span>
-                                            <div>
-                                                <h3 className="font-bold text-slate-800 text-sm">{ppdbFeeStructure.tk.title}</h3>
-                                                <span className="text-xxs text-teal-900 font-bold">
+                                            <div className="min-w-0">
+                                                <h3 className="font-bold text-slate-800 text-xs sm:text-sm truncate">{ppdbFeeStructure.tk.title}</h3>
+                                                <span className="text-[11px] text-teal-900 font-extrabold block">
                                                     Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
                                                         ppdbFeeStructure.tk.items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)
                                                     )}
@@ -899,40 +944,42 @@ export default function Settings() {
                                         <button
                                             type="button"
                                             onClick={() => handleAddFeeItem('tk')}
-                                            className="px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xxs rounded-lg flex items-center gap-1 transition"
+                                            className="w-full sm:w-auto px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xxs rounded-xl flex items-center justify-center gap-1.5 transition shrink-0 cursor-pointer shadow-xs"
                                         >
-                                            <Plus size={13} /> Tambah Item
+                                            <Plus size={13} /> <span>Tambah Item</span>
                                         </button>
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         {ppdbFeeStructure.tk.items.map((item, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-teal-100 shadow-xs">
+                                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 bg-white p-2.5 rounded-xl border border-teal-100 shadow-xs">
                                                 <input
                                                     type="text"
                                                     value={item.name}
                                                     onChange={(e) => handleFeeItemChange('tk', idx, 'name', e.target.value)}
                                                     placeholder="Nama Komponen Biaya"
-                                                    className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
+                                                    className="w-full sm:flex-1 min-w-0 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:border-teal-500 focus:outline-none"
                                                 />
-                                                <div className="relative w-36">
-                                                    <span className="absolute left-2.5 top-1.5 text-slate-400 text-xs font-bold">Rp</span>
-                                                    <input
-                                                        type="number"
-                                                        value={item.amount}
-                                                        onChange={(e) => handleFeeItemChange('tk', idx, 'amount', e.target.value)}
-                                                        placeholder="0"
-                                                        className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800"
-                                                    />
+                                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                    <div className="relative flex-1 sm:w-36 min-w-0">
+                                                        <span className="absolute left-2.5 top-1.5 text-slate-400 text-xs font-bold pointer-events-none">Rp</span>
+                                                        <input
+                                                            type="number"
+                                                            value={item.amount}
+                                                            onChange={(e) => handleFeeItemChange('tk', idx, 'amount', e.target.value)}
+                                                            placeholder="0"
+                                                            className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:border-teal-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveFeeItem('tk', idx)}
+                                                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition shrink-0 cursor-pointer"
+                                                        title="Hapus baris"
+                                                    >
+                                                        <Trash2 size={15} />
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveFeeItem('tk', idx)}
-                                                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition"
-                                                    title="Hapus baris"
-                                                >
-                                                    <Trash2 size={15} />
-                                                </button>
                                             </div>
                                         ))}
                                     </div>
@@ -1100,87 +1147,204 @@ export default function Settings() {
                 </form>
             )}
 
-            {/* TAB 2: BRANDING & LOGO */}
+            {/* TAB 2: BRANDING, LOGO & KONTAK SEKOLAH */}
             {activeTab === 'branding' && (
-                <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border-none space-y-6">
-                    <div>
-                        <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <Image className="text-teal-600" size={20} />
-                            <span>Branding Logo Sekolah</span>
-                        </h2>
-                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                            Upload 1 (satu) file logo resmi yang akan secara otomatis diterapkan di <strong>Landing Page</strong>, <strong>Sidebar Admin</strong>, dan <strong>Halaman Login Admin</strong>.
-                        </p>
-                    </div>
-
-                    {logoSuccessMsg && (
-                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-800 text-xs font-semibold animate-fadeIn">
-                            <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
-                            <span>{logoSuccessMsg}</span>
-                        </div>
-                    )}
-
-                    {logoErrorMsg && (
-                        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800 text-xs font-semibold animate-fadeIn">
-                            <AlertCircle size={18} className="text-rose-600 shrink-0" />
-                            <span>{logoErrorMsg}</span>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
-                        {/* Preview Box */}
-                        <div className="flex flex-col items-center justify-center p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl min-h-[220px]">
-                            {previewLogo ? (
-                                <div className="space-y-3 text-center">
-                                    <img 
-                                        src={previewLogo} 
-                                        alt="School Logo Preview" 
-                                        className="max-h-24 max-w-full object-contain mx-auto drop-shadow-xs" 
-                                    />
-                                    <span className="text-[11px] text-teal-700 font-bold block bg-teal-50 px-3 py-1 rounded-full">
-                                        ✓ Logo Terpasang
-                                    </span>
-                                </div>
-                            ) : (
-                                <div className="text-center text-slate-400 space-y-2">
-                                    <Image size={36} className="mx-auto text-slate-300" />
-                                    <p className="text-xs">Belum ada logo yang dipilih</p>
-                                </div>
-                            )}
+                <div className="space-y-8">
+                    {/* Section 2A: Branding Logo Sekolah */}
+                    <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border-none space-y-6">
+                        <div>
+                            <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <Image className="text-teal-600" size={20} />
+                                <span>Branding Logo Sekolah</span>
+                            </h2>
+                            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Upload 1 (satu) file logo resmi yang akan secara otomatis diterapkan di <strong>Landing Page</strong>, <strong>Sidebar Admin</strong>, dan <strong>Halaman Login Admin</strong>.
+                            </p>
                         </div>
 
-                        {/* Upload Controls */}
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                                    Pilih File Logo Baru (PNG / JPG / SVG, Maks 2MB)
-                                </label>
-                                <input 
-                                    type="file" 
-                                    accept="image/png,image/jpeg,image/svg+xml"
-                                    onChange={handleFileChange}
-                                    className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer"
-                                />
+                        {logoSuccessMsg && (
+                            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-800 text-xs font-semibold animate-fadeIn">
+                                <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                                <span>{logoSuccessMsg}</span>
+                            </div>
+                        )}
+
+                        {logoErrorMsg && (
+                            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800 text-xs font-semibold animate-fadeIn">
+                                <AlertCircle size={18} className="text-rose-600 shrink-0" />
+                                <span>{logoErrorMsg}</span>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
+                            {/* Preview Box */}
+                            <div className="flex flex-col items-center justify-center p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl min-h-[220px]">
+                                {previewLogo ? (
+                                    <div className="space-y-3 text-center">
+                                        <img 
+                                            src={previewLogo} 
+                                            alt="School Logo Preview" 
+                                            className="max-h-24 max-w-full object-contain mx-auto drop-shadow-xs" 
+                                        />
+                                        <span className="text-[11px] text-teal-700 font-bold block bg-teal-50 px-3 py-1 rounded-full">
+                                            ✓ Logo Terpasang
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-slate-400 space-y-2">
+                                        <Image size={36} className="mx-auto text-slate-300" />
+                                        <p className="text-xs">Belum ada logo yang dipilih</p>
+                                    </div>
+                                )}
                             </div>
 
-                            <button
-                                onClick={handleSaveLogo}
-                                disabled={!fileLogo || uploadingLogo}
-                                className="w-full sm:w-auto px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                            >
-                                {uploadingLogo ? (
-                                    <>
-                                        <Loader2 size={16} className="animate-spin" />
-                                        <span>Menyimpan Logo...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save size={16} />
-                                        <span>Simpan & Terapkan Logo</span>
-                                    </>
-                                )}
-                            </button>
+                            {/* Upload Controls */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                        Pilih File Logo Baru (PNG / JPG / SVG, Maks 2MB)
+                                    </label>
+                                    <input 
+                                        type="file" 
+                                        accept="image/png,image/jpeg,image/svg+xml"
+                                        onChange={handleFileChange}
+                                        className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleSaveLogo}
+                                    disabled={!fileLogo || uploadingLogo}
+                                    className="w-full sm:w-auto px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                >
+                                    {uploadingLogo ? (
+                                        <>
+                                            <Loader2 size={16} className="animate-spin" />
+                                            <span>Menyimpan Logo...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save size={16} />
+                                            <span>Simpan & Terapkan Logo</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
+                    </div>
+
+                    {/* Section 2B: Informasi Kontak & Profil Sekolah */}
+                    <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border-none space-y-6">
+                        <div>
+                            <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <Building2 className="text-teal-600" size={20} />
+                                <span>Informasi Kontak & Profil Sekolah</span>
+                            </h2>
+                            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Atur nomor WhatsApp, email, dan alamat sekolah yang tampil di <strong>Footer Website</strong>, <strong>Halaman Profil</strong>, dan <strong>Halaman Kontak</strong>.
+                            </p>
+                        </div>
+
+                        {profileSuccessMsg && (
+                            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-800 text-xs font-semibold animate-fadeIn">
+                                <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                                <span>{profileSuccessMsg}</span>
+                            </div>
+                        )}
+
+                        {profileErrorMsg && (
+                            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800 text-xs font-semibold animate-fadeIn">
+                                <AlertCircle size={18} className="text-rose-600 shrink-0" />
+                                <span>{profileErrorMsg}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSaveSchoolProfile} className="space-y-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                        <Building2 size={14} className="text-teal-600" />
+                                        <span>Nama Resmi Sekolah *</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={schoolName}
+                                        onChange={(e) => setSchoolName(e.target.value)}
+                                        placeholder="Contoh: KB-TK IT Taman Robbani Sidoarjo"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:border-teal-500 focus:outline-none font-medium"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                        <Phone size={14} className="text-teal-600" />
+                                        <span>Nomor Telepon / WhatsApp Resmi *</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={schoolPhone}
+                                        onChange={(e) => setSchoolPhone(e.target.value)}
+                                        placeholder="Contoh: 0816503293"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:border-teal-500 focus:outline-none font-bold text-teal-800"
+                                        required
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 block">
+                                        Nomor ini akan menjadi tujuan chat WhatsApp dan tampil di seluruh tombol kontak.
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                        <Mail size={14} className="text-teal-600" />
+                                        <span>Email Resmi Sekolah *</span>
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={schoolEmail}
+                                        onChange={(e) => setSchoolEmail(e.target.value)}
+                                        placeholder="Contoh: tamanrobbani23@gmail.com"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:border-teal-500 focus:outline-none font-medium"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                        <MapPin size={14} className="text-teal-600" />
+                                        <span>Alamat Lengkap Sekolah *</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={schoolAddress}
+                                        onChange={(e) => setSchoolAddress(e.target.value)}
+                                        placeholder="Contoh: Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:border-teal-500 focus:outline-none font-medium"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end pt-3">
+                                <button
+                                    type="submit"
+                                    disabled={savingSchoolProfile}
+                                    className="w-full sm:w-auto px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+                                >
+                                    {savingSchoolProfile ? (
+                                        <>
+                                            <Loader2 size={16} className="animate-spin" />
+                                            <span>Menyimpan Kontak...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save size={16} />
+                                            <span>Simpan Perubahan Kontak & Profil</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

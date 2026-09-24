@@ -31,11 +31,20 @@ class AdminSettingController extends Controller
             }
         }
 
+        $schoolName = Setting::where('key', 'school_name')->first()?->value ?? 'KB-TK IT Taman Robbani Sidoarjo';
+        $schoolPhone = Setting::where('key', 'school_phone')->first()?->value ?? '0816503293';
+        $schoolEmail = Setting::where('key', 'school_email')->first()?->value ?? 'tamanrobbani23@gmail.com';
+        $schoolAddress = Setting::where('key', 'school_address')->first()?->value ?? 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo';
+
         return response()->json([
             'success' => true,
             'data' => [
                 'school_logo' => $logoUrl,
                 'school_logo_path' => $unifiedLogo,
+                'school_name' => $schoolName,
+                'school_phone' => $schoolPhone,
+                'school_email' => $schoolEmail,
+                'school_address' => $schoolAddress,
                 // Backward compatibility keys - all pointing to single unified logo
                 'logo_landing' => $logoUrl,
                 'logo_admin_portal' => $logoUrl,
@@ -44,6 +53,36 @@ class AdminSettingController extends Controller
                 'logo_admin_portal_path' => $unifiedLogo,
                 'logo_admin_login_path' => $unifiedLogo,
             ],
+        ]);
+    }
+
+    /**
+     * Update school profile & contact settings.
+     */
+    public function updateSchoolProfile(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'school_name' => 'nullable|string|max:255',
+            'school_phone' => 'nullable|string|max:50',
+            'school_email' => 'nullable|email|max:255',
+            'school_address' => 'nullable|string|max:500',
+        ]);
+
+        foreach ($validated as $key => $val) {
+            if ($val !== null) {
+                Setting::updateOrCreate(['key' => $key], ['value' => $val]);
+            }
+        }
+
+        // Also sync contact_phone
+        if (! empty($validated['school_phone'])) {
+            Setting::updateOrCreate(['key' => 'contact_phone'], ['value' => $validated['school_phone']]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Informasi profil & kontak sekolah berhasil disimpan.',
+            'data' => $validated,
         ]);
     }
 

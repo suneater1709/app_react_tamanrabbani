@@ -78,7 +78,19 @@ export default function AdminLayout() {
                     <div className="h-16 flex items-center justify-between px-6 bg-slate-950/40 border-b border-slate-800/60 flex-shrink-0">
                         <div className="flex items-center gap-3">
                             {schoolLogo ? (
-                                <img src={schoolLogo} alt="Logo" className="w-8 h-8 rounded-xl object-contain bg-white/10 p-0.5 shadow-sm" />
+                                <img 
+                                    src={schoolLogo} 
+                                    alt="Logo" 
+                                    className="w-8 h-8 rounded-xl object-contain bg-white/10 p-0.5 shadow-sm" 
+                                    onError={(e) => {
+                                        const target = e.currentTarget;
+                                        if (!target.src.endsWith('/images/logo.png')) {
+                                            target.src = '/images/logo.png';
+                                        } else {
+                                            target.style.display = 'none';
+                                        }
+                                    }}
+                                />
                             ) : (
                                 <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center font-bold text-white font-display shadow-sm shadow-teal-500/20">
                                     TR
