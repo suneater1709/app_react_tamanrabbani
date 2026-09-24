@@ -110,7 +110,7 @@ class AdminSettingController extends Controller
     }
 
     /**
-     * Get PPDB schedule, wave, and badge settings.
+     * Get PPDB schedule, wave, badge, and poster settings.
      */
     public function getPpdbSettings(): JsonResponse
     {
@@ -121,6 +121,7 @@ class AdminSettingController extends Controller
             'ppdb_form_fee',
             'ppdb_waves',
             'ppdb_fee_structure',
+            'ppdb_poster',
         ])->pluck('value', 'key');
 
         $defaultWaves = [
@@ -192,6 +193,16 @@ class AdminSettingController extends Controller
             $fees = $defaultFees;
         }
 
+        $poster = $settings->get('ppdb_poster');
+        $posterUrl = '';
+        if ($poster) {
+            if (str_starts_with($poster, 'http://') || str_starts_with($poster, 'https://') || str_starts_with($poster, '/')) {
+                $posterUrl = $poster;
+            } else {
+                $posterUrl = '/storage/'.ltrim($poster, '/');
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -201,6 +212,8 @@ class AdminSettingController extends Controller
                 'ppdb_form_fee' => $settings->get('ppdb_form_fee', 'Rp 100.000'),
                 'ppdb_waves' => $waves,
                 'ppdb_fee_structure' => $fees,
+                'ppdb_poster' => $posterUrl,
+                'ppdb_poster_path' => $poster,
             ],
         ]);
     }
@@ -245,5 +258,80 @@ class AdminSettingController extends Controller
         }
 
         return $this->getPpdbSettings();
+    }
+
+    /**
+     * Upload PPDB Poster / Brochure (Image or PDF).
+     */
+    public function uploadPpdbPoster(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'poster' => 'required|file|mimes:png,jpg,jpeg,webp,pdf|max:10240',
+        ], [
+            'poster.required' => 'File poster PPDB wajib diunggah.',
+            'poster.mimes' => 'Format file poster harus berupa PNG, JPG, JPEG, WEBP, atau PDF.',
+            'poster.max' => 'Ukuran file poster tidak boleh melebihi 10MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        $file = $request->file('poster');
+
+        if ($file->isValid()) {
+            // Delete old poster if exists
+            $oldSetting = Setting::where('key', 'ppdb_poster')->first();
+            if ($oldSetting && $oldSetting->value && ! str_starts_with($oldSetting->value, 'http') && ! str_starts_with($oldSetting->value, '/')) {
+                Storage::disk('public')->delete($oldSetting->value);
+            }
+
+            // Store new poster in public/posters
+            $path = $file->store('posters', 'public');
+
+            Setting::updateOrCreate(
+                ['key' => 'ppdb_poster'],
+                ['value' => $path]
+            );
+
+            $url = Storage::url($path);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Poster PPDB berhasil diunggah dan diperbarui.',
+                'data' => [
+                    'ppdb_poster' => $url,
+                    'ppdb_poster_path' => $path,
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'File upload tidak valid.',
+        ], 400);
+    }
+
+    /**
+     * Delete PPDB Poster.
+     */
+    public function deletePpdbPoster(): JsonResponse
+    {
+        $setting = Setting::where('key', 'ppdb_poster')->first();
+        if ($setting && $setting->value) {
+            if (! str_starts_with($setting->value, 'http') && ! str_starts_with($setting->value, '/')) {
+                Storage::disk('public')->delete($setting->value);
+            }
+            $setting->update(['value' => null]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Poster PPDB berhasil dihapus.',
+        ]);
     }
 }

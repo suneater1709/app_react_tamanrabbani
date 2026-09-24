@@ -82,7 +82,7 @@ class TenantDatabaseSeeder extends Seeder
         $settings = [
             'school_name' => 'KB-TK IT Taman Robbani Sidoarjo',
             'school_address' => 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo',
-            'school_phone' => '087752439572',
+            'school_phone' => '0816503293',
             'school_email' => 'tamanrobbani23@gmail.com',
             'admission_open' => 'true',
             'admission_start_date' => '2027-01-01',

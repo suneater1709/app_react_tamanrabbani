@@ -34,6 +34,7 @@ Route::prefix('v1')->group(function () {
         Route::get('cms/gallery', [PublicCmsController::class, 'galleries']);
         Route::get('gallery', [PublicCmsController::class, 'galleries']);
         Route::get('settings', [PublicCmsController::class, 'settings']);
+        Route::get('ppdb/poster/download', [PublicCmsController::class, 'downloadPoster']);
 
         Route::post('admissions', [PublicAdmissionController::class, 'store']);
         Route::get('admissions/calculate-fee', [PublicAdmissionController::class, 'calculateFee']);
@@ -105,6 +106,8 @@ Route::prefix('v1')->group(function () {
             Route::get('settings/ppdb', [AdminSettingController::class, 'getPpdbSettings']);
             Route::post('settings/ppdb', [AdminSettingController::class, 'updatePpdbSettings']);
             Route::put('settings/ppdb', [AdminSettingController::class, 'updatePpdbSettings']);
+            Route::post('settings/ppdb/poster', [AdminSettingController::class, 'uploadPpdbPoster']);
+            Route::delete('settings/ppdb/poster', [AdminSettingController::class, 'deletePpdbPoster']);
         });
     });
 

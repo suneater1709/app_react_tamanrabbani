@@ -97,6 +97,9 @@ export const adminApi = {
     // PPDB Settings & Waves
     getPpdbSettings: () => api.get('/admin/settings/ppdb').then(res => res.data),
     updatePpdbSettings: (data: any) => api.post('/admin/settings/ppdb', data).then(res => res.data),
+    uploadPpdbPoster: (data: FormData) => 
+        api.post('/admin/settings/ppdb/poster', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(res => res.data),
+    deletePpdbPoster: () => api.delete('/admin/settings/ppdb/poster').then(res => res.data),
 
     // CMS Home & Hero Sliders
     getHomeCms: () => api.get('/admin/cms/home').then(res => res.data),

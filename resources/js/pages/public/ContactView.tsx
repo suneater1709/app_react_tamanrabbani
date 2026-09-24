@@ -48,7 +48,7 @@ export default function ContactView() {
             '*Pesan:*',
             data.message,
         ].join('\n');
-        const waUrl = `https://wa.me/6287752439572?text=${encodeURIComponent(waText)}`;
+        const waUrl = `https://wa.me/62816503293?text=${encodeURIComponent(waText)}`;
 
         // Open WhatsApp directly
         window.open(waUrl, '_blank');
@@ -110,12 +110,12 @@ export default function ContactView() {
                                     <h4 className="font-semibold text-teal-100 text-sm sm:text-base">Telepon / WhatsApp</h4>
                                     <p className="text-xs sm:text-sm mt-1">
                                         <a
-                                            href="https://wa.me/6287752439572"
+                                            href="https://wa.me/62816503293"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-teal-50/90 hover:text-white underline underline-offset-2 transition-colors font-medium"
                                         >
-                                            087752439572 (Chat WhatsApp)
+                                            0816503293 (Chat WhatsApp)
                                         </a>
                                     </p>
                                 </div>
@@ -160,14 +160,14 @@ export default function ContactView() {
                                             Kirimkan langsung pesan ini ke WhatsApp Admin agar segera dijawab:
                                         </p>
                                         <a
-                                            href={`https://wa.me/6287752439572?text=${encodeURIComponent(
+                                            href={`https://wa.me/62816503293?text=${encodeURIComponent(
                                                 `Halo Admin KB-TK IT Taman Robbani,\nSaya mengirim pesan dari web PPDB:\n\n*Nama:* ${submittedData.name}\n*Email:* ${submittedData.email}\n*Telepon:* ${submittedData.phone || '-'}\n*Subjek:* ${submittedData.subject || '-'}\n\n*Pesan:*\n${submittedData.message}`
                                             )}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                                         >
-                                            <span>Kirim ke WhatsApp (087752439572)</span>
+                                            <span>Kirim ke WhatsApp (0816503293)</span>
                                         </a>
                                     </div>
                                 )}

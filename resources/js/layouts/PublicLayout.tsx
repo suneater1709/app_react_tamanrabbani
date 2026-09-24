@@ -13,7 +13,7 @@ export default function PublicLayout() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [settings, setSettings] = useState<any>({
         school_address: 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo',
-        school_phone: '087752439572',
+        school_phone: '0816503293',
         school_email: 'tamanrobbani23@gmail.com',
     });
 
@@ -213,12 +213,12 @@ export default function PublicLayout() {
                                 <span className="block">{settings.school_address || 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo'}</span>
                                 <span className="block">
                                     <a
-                                        href={`https://wa.me/62${(settings.school_phone || '087752439572').replace(/\D/g, '').replace(/^62|^0/, '')}`}
+                                        href={`https://wa.me/62${(settings.school_phone || '0816503293').replace(/\D/g, '').replace(/^62|^0/, '')}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-slate-300 hover:text-teal-400 transition-colors"
                                     >
-                                        Telepon / WA: {settings.school_phone || '087752439572'}
+                                        Telepon / WA: {settings.school_phone || '0816503293'}
                                     </a>
                                 </span>
                                 <span className="block">

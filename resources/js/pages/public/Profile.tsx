@@ -36,7 +36,7 @@ export default function Profile() {
     const [welcomeMessage, setWelcomeMessage] = useState<string>('');
     const [settings, setSettings] = useState<any>({
         school_address: 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo',
-        school_phone: '087752439572',
+        school_phone: '0816503293',
         school_email: 'tamanrobbani23@gmail.com',
     });
     const [loading, setLoading] = useState(true);
@@ -285,7 +285,7 @@ export default function Profile() {
                             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 text-xs sm:text-sm text-slate-600">
                                 <p className="font-medium">{settings.school_address || 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo'}</p>
                                 <div className="pt-2 border-t border-slate-200 flex flex-col gap-1 text-xs text-slate-500">
-                                    <span>📞 {settings.school_phone || '087752439572'}</span>
+                                    <span>📞 {settings.school_phone || '0816503293'}</span>
                                     <span>✉️ {settings.school_email || 'tamanrobbani23@gmail.com'}</span>
                                 </div>
                             </div>

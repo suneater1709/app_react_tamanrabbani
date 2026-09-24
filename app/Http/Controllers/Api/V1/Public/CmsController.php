@@ -12,6 +12,7 @@ use App\Repositories\Contracts\CmsRepositoryInterface;
 use App\Services\CmsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CmsController extends Controller
 {
@@ -23,6 +24,36 @@ class CmsController extends Controller
     {
         $this->cmsService = $cmsService;
         $this->cmsRepo = $cmsRepo;
+    }
+
+    /**
+     * Download the official PPDB poster with proper named filename.
+     */
+    public function downloadPoster()
+    {
+        $setting = Setting::where('key', 'ppdb_poster')->first();
+        if (! $setting || ! $setting->value) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Poster PPDB belum diunggah.',
+            ], 404);
+        }
+
+        $path = $setting->value;
+        $ext = pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg';
+        $downloadName = 'Poster -PPDB-tamanrabbani.'.$ext;
+
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->download($path, $downloadName, [
+                'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
+            ]);
+        }
+
+        if (file_exists(public_path($path))) {
+            return response()->download(public_path($path), $downloadName);
+        }
+
+        return redirect($path);
     }
 
     /**
@@ -222,6 +253,20 @@ class CmsController extends Controller
             }
         }
 
+        $poster = $settings->get('ppdb_poster');
+        $posterUrl = null;
+        if ($poster) {
+            if (str_starts_with($poster, 'http://') || str_starts_with($poster, 'https://') || str_starts_with($poster, '/')) {
+                $posterUrl = $poster;
+            } else {
+                $posterUrl = '/storage/'.ltrim($poster, '/');
+            }
+        }
+
+        $phone = $settings->get('school_phone', '0816503293');
+        $waDigits = preg_replace('/^0|^62/', '', preg_replace('/\D/', '', $phone));
+        $whatsappUrl = 'https://wa.me/62'.($waDigits ?: '816503293');
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -229,9 +274,11 @@ class CmsController extends Controller
                 'logo_landing' => $logoUrl,
                 'school_name' => $settings->get('school_name', 'KB-TK IT Taman Robbani Sidoarjo'),
                 'school_address' => $settings->get('school_address', 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo'),
-                'school_phone' => $settings->get('school_phone', '087752439572'),
+                'school_phone' => $phone,
                 'school_email' => $settings->get('school_email', 'tamanrobbani23@gmail.com'),
-                'whatsapp_url' => 'https://wa.me/6287752439572',
+                'whatsapp_url' => $whatsappUrl,
+                'ppdb_poster' => $posterUrl,
+                'ppdb_poster_path' => $poster,
                 'ppdb_badge_text' => $settings->get('ppdb_badge_text', 'Penerimaan Murid Baru (PPDB) 2026/2027 Dibuka!'),
                 'ppdb_academic_year' => $settings->get('ppdb_academic_year', '2026/2027'),
                 'ppdb_is_open' => filter_var($settings->get('ppdb_is_open', '1'), FILTER_VALIDATE_BOOLEAN),

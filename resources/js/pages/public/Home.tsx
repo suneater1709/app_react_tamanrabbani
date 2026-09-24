@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Calendar, Sparkles, Heart, CheckCircle2, ChevronRight, ChevronLeft, Award, Camera, Image as ImageIcon, Play } from 'lucide-react';
+import { 
+    ArrowRight, Calendar, Sparkles, Heart, CheckCircle2, ChevronRight, 
+    ChevronLeft, Award, Camera, Image as ImageIcon, Play, FileDown, Download, ExternalLink, X 
+} from 'lucide-react';
 import { cmsApi } from '../../services/api';
 import CurriculumSection from '../../components/CurriculumSection';
 
@@ -50,6 +53,8 @@ export default function Home() {
     const [heroTagline, setHeroTagline] = useState<string>("Berkarakter Qur'an");
     const [aboutVideoUrl, setAboutVideoUrl] = useState<string>("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
     const [ppdbBadgeText, setPpdbBadgeText] = useState<string>("Penerimaan Murid Baru (PPDB) 2026/2027 Dibuka!");
+    const [ppdbPoster, setPpdbPoster] = useState<string | null>(null);
+    const [showPosterModal, setShowPosterModal] = useState<boolean>(false);
     const [sliders, setSliders] = useState<SliderItem[]>([]);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
@@ -142,8 +147,13 @@ export default function Home() {
                 if (galleryRes.success && galleryRes.data) {
                     setLatestGallery(galleryRes.data.slice(0, 4));
                 }
-                if (settingsRes?.success && settingsRes.data?.ppdb_badge_text) {
-                    setPpdbBadgeText(settingsRes.data.ppdb_badge_text);
+                if (settingsRes?.success && settingsRes.data) {
+                    if (settingsRes.data.ppdb_badge_text) {
+                        setPpdbBadgeText(settingsRes.data.ppdb_badge_text);
+                    }
+                    if (settingsRes.data.ppdb_poster) {
+                        setPpdbPoster(settingsRes.data.ppdb_poster);
+                    }
                 }
             })
             .catch((err) => console.error(err))
@@ -232,20 +242,54 @@ export default function Home() {
                                 Selamat datang di <strong>KB-TK IT Taman Robbani</strong>. Kami menghadirkan pendidikan anak usia dini berbasis nilai-nilai Islami yang dipadukan dengan konsep bermain ramah anak yang merangsang kreativitas, akhlak, dan kemandirian sejak dini.
                             </p>
 
-                            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-3 sm:pt-4">
+                            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-2">
                                 <Link
                                     to="/ppdb"
-                                    className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl sm:rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer transform hover:-translate-y-0.5"
+                                    className="w-full sm:w-auto px-7 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl sm:rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer transform hover:-translate-y-0.5"
                                 >
                                     <span>Daftar Sekarang</span>
                                     <ArrowRight size={18} />
                                 </Link>
                                 <Link
                                     to="/ppdb"
-                                    className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl sm:rounded-full transition-all duration-300 shadow-2xs hover:shadow-xs text-sm sm:text-base flex items-center justify-center cursor-pointer"
+                                    className="w-full sm:w-auto px-7 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl sm:rounded-full transition-all duration-300 shadow-2xs hover:shadow-xs text-sm sm:text-base flex items-center justify-center cursor-pointer"
                                 >
                                     Informasi Pendaftaran
                                 </Link>
+                            </div>
+
+                            {/* Eye-catching PPDB Poster & Brochure Card */}
+                            <div className="pt-2 max-w-xl">
+                                <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-50/90 via-amber-50 to-orange-50/70 border border-amber-200/90 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-all">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                                            <FileDown size={22} className="animate-pulse" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="text-xs sm:text-sm font-extrabold text-slate-800">
+                                                    Brosur & Poster Resmi PPDB
+                                                </h4>
+                                                <span className="px-2 py-0.5 bg-amber-200 text-amber-900 text-[10px] font-black rounded-full uppercase tracking-wider">
+                                                    PDF / Foto
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-snug">
+                                                Unduh panduan lengkap pendaftaran, syarat berkas & rincian biaya.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <a
+                                        href="/api/v1/public/ppdb/poster/download"
+                                        download="Poster -PPDB-tamanrabbani"
+                                        className="w-full sm:w-auto px-5 py-2.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl sm:rounded-2xl shadow-xs hover:shadow-md transition flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer"
+                                        title="Unduh Poster / Brosur PPDB"
+                                    >
+                                        <Download size={16} />
+                                        <span>Unduh Poster</span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
 

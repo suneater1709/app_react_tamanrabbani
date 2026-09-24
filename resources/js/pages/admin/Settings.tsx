@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { 
     ShieldCheck, Plus, UserPlus, Image, HelpCircle, Loader2, 
     Save, Trash2, Edit, Calendar, Sparkles, CheckCircle2, 
-    Tag, FileText, Check, AlertCircle, Eye, RefreshCw, Wallet, Receipt, DollarSign
+    Tag, FileText, Check, AlertCircle, Eye, RefreshCw, Wallet, Receipt, DollarSign,
+    Upload, Download, FileDown, ExternalLink
 } from 'lucide-react';
 import axios from 'axios';
 import { adminApi } from '../../services/api';
@@ -103,6 +104,15 @@ export default function Settings() {
     const [ppdbSuccessMsg, setPpdbSuccessMsg] = useState<string | null>(null);
     const [ppdbErrorMsg, setPpdbErrorMsg] = useState<string | null>(null);
 
+    // Section 1D: Poster PPDB state
+    const [ppdbPoster, setPpdbPoster] = useState<string>('');
+    const [ppdbPosterPath, setPpdbPosterPath] = useState<string>('');
+    const [filePoster, setFilePoster] = useState<File | null>(null);
+    const [previewPoster, setPreviewPoster] = useState<string>('');
+    const [uploadingPoster, setUploadingPoster] = useState(false);
+    const [posterSuccessMsg, setPosterSuccessMsg] = useState<string | null>(null);
+    const [posterErrorMsg, setPosterErrorMsg] = useState<string | null>(null);
+
     // Section 2: Unified logo setting state
     const [schoolLogo, setSchoolLogo] = useState('');
     const [fileLogo, setFileLogo] = useState<File | null>(null);
@@ -172,10 +182,82 @@ export default function Settings() {
                     if (res.data.ppdb_fee_structure && res.data.ppdb_fee_structure.kb && res.data.ppdb_fee_structure.tk) {
                         setPpdbFeeStructure(res.data.ppdb_fee_structure);
                     }
+                    if (res.data.ppdb_poster) {
+                        setPpdbPoster(res.data.ppdb_poster);
+                        setPreviewPoster(res.data.ppdb_poster);
+                    } else {
+                        setPpdbPoster('');
+                        setPreviewPoster('');
+                    }
+                    if (res.data.ppdb_poster_path) {
+                        setPpdbPosterPath(res.data.ppdb_poster_path);
+                    }
                 }
             })
             .catch(err => console.error(err))
             .finally(() => setLoadingPpdb(false));
+    };
+
+    // Poster handlers
+    const handlePosterFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        if (!file) return;
+
+        setFilePoster(file);
+        if (file.type.startsWith('image/')) {
+            setPreviewPoster(URL.createObjectURL(file));
+        } else {
+            setPreviewPoster(file.name);
+        }
+        setPosterSuccessMsg(null);
+        setPosterErrorMsg(null);
+    };
+
+    const handleSavePoster = async () => {
+        if (!filePoster) return;
+
+        setUploadingPoster(true);
+        setPosterSuccessMsg(null);
+        setPosterErrorMsg(null);
+
+        const formData = new FormData();
+        formData.append('poster', filePoster);
+
+        try {
+            const res = await adminApi.uploadPpdbPoster(formData);
+            if (res.success) {
+                setPosterSuccessMsg('Poster PPDB berhasil diunggah! Calon wali murid dapat langsung mengunduh/melihatnya di Beranda.');
+                setFilePoster(null);
+                fetchPpdbSettings();
+                setTimeout(() => setPosterSuccessMsg(null), 5000);
+            }
+        } catch (err: any) {
+            console.error(err);
+            setPosterErrorMsg(err.response?.data?.message || 'Gagal mengupload poster PPDB. Pastikan format PNG/JPG/WEBP/PDF dan ukuran maks 10MB.');
+        } finally {
+            setUploadingPoster(false);
+        }
+    };
+
+    const handleDeletePoster = async () => {
+        if (!window.confirm('Apakah Anda yakin ingin menghapus poster PPDB saat ini?')) return;
+        setUploadingPoster(true);
+        try {
+            const res = await adminApi.deletePpdbPoster();
+            if (res.success) {
+                setPosterSuccessMsg('Poster PPDB berhasil dihapus.');
+                setPpdbPoster('');
+                setPreviewPoster('');
+                setFilePoster(null);
+                fetchPpdbSettings();
+                setTimeout(() => setPosterSuccessMsg(null), 5000);
+            }
+        } catch (err: any) {
+            console.error(err);
+            setPosterErrorMsg(err.response?.data?.message || 'Gagal menghapus poster PPDB.');
+        } finally {
+            setUploadingPoster(false);
+        }
     };
 
     // Save PPDB Settings
@@ -877,6 +959,142 @@ export default function Settings() {
                                     </>
                                 )}
                             </button>
+                        </div>
+                    </div>
+
+                    {/* Section 1D: Poster & Brosur PPDB */}
+                    <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border-none space-y-6">
+                        <div>
+                            <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <FileDown className="text-teal-600" size={20} />
+                                <span>Poster & Brosur PPDB</span>
+                            </h2>
+                            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                Upload poster atau brosur resmi PPDB (Format PNG, JPG, JPEG, WEBP, atau PDF, maks 10MB). File ini akan otomatis dapat diunduh oleh pengunjung melalui tombol <strong>"Unduh Poster PPDB"</strong> di Beranda website.
+                            </p>
+                        </div>
+
+                        {posterSuccessMsg && (
+                            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-800 text-xs font-semibold animate-fadeIn">
+                                <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                                <span>{posterSuccessMsg}</span>
+                            </div>
+                        )}
+
+                        {posterErrorMsg && (
+                            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800 text-xs font-semibold animate-fadeIn">
+                                <AlertCircle size={18} className="text-rose-600 shrink-0" />
+                                <span>{posterErrorMsg}</span>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
+                            {/* Preview Box */}
+                            <div className="flex flex-col items-center justify-center p-6 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl min-h-[220px]">
+                                {ppdbPoster || previewPoster ? (
+                                    <div className="space-y-3 text-center w-full">
+                                        {(previewPoster.match(/\.(jpeg|jpg|png|webp|gif)(\?.*)?$/i) || filePoster?.type.startsWith('image/')) ? (
+                                            <div className="relative max-h-56 overflow-hidden rounded-xl mx-auto shadow-xs border border-slate-200 bg-white p-1">
+                                                <img 
+                                                    src={previewPoster} 
+                                                    alt="Poster PPDB Preview" 
+                                                    className="max-h-52 max-w-full object-contain mx-auto rounded-lg" 
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="p-6 bg-white rounded-xl border border-slate-200 inline-flex flex-col items-center gap-2 shadow-xs">
+                                                <FileText size={48} className="text-teal-600" />
+                                                <span className="text-xs font-bold text-slate-700 max-w-[220px] truncate">
+                                                    {filePoster ? filePoster.name : (ppdbPoster.split('/').pop() || 'Dokumen Poster PPDB.pdf')}
+                                                </span>
+                                                <span className="text-[10px] text-teal-600 bg-teal-50 px-2.5 py-0.5 rounded-full font-bold">
+                                                    Dokumen PDF
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center justify-center gap-2 pt-2">
+                                            <span className="text-[11px] text-teal-700 font-bold bg-teal-50 px-3 py-1 rounded-full">
+                                                ✓ Poster PPDB Terpasang
+                                            </span>
+                                            {ppdbPoster && (
+                                                <>
+                                                    <a
+                                                        href={ppdbPoster}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-[11px] text-slate-600 hover:text-teal-700 font-bold bg-white border border-slate-200 px-3 py-1 rounded-full flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                                                    >
+                                                        <ExternalLink size={12} />
+                                                        <span>Lihat File</span>
+                                                    </a>
+                                                    <a
+                                                        href="/api/v1/public/ppdb/poster/download"
+                                                        download="Poster -PPDB-tamanrabbani"
+                                                        className="text-[11px] text-teal-700 hover:text-teal-900 font-bold bg-teal-50 border border-teal-200 px-3 py-1 rounded-full flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                                                    >
+                                                        <Download size={12} />
+                                                        <span>Unduh File</span>
+                                                    </a>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-slate-400 space-y-2">
+                                        <FileDown size={36} className="mx-auto text-slate-300" />
+                                        <p className="text-xs font-semibold">Belum ada file poster PPDB yang diunggah</p>
+                                        <span className="text-[10px] text-slate-400 block max-w-xs">Pengunjung di Beranda belum dapat mengunduh poster jika file belum diunggah.</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Upload Controls */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                        Pilih File Poster Baru (PNG, JPG, WEBP, atau PDF, Maks 10MB)
+                                    </label>
+                                    <input 
+                                        type="file" 
+                                        accept="image/png,image/jpeg,image/webp,application/pdf"
+                                        onChange={handlePosterFileChange}
+                                        className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer"
+                                    />
+                                </div>
+
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleSavePoster}
+                                        disabled={!filePoster || uploadingPoster}
+                                        className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                    >
+                                        {uploadingPoster ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" />
+                                                <span>Mengunggah Poster...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload size={16} />
+                                                <span>Upload & Simpan Poster</span>
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {ppdbPoster && (
+                                        <button
+                                            type="button"
+                                            onClick={handleDeletePoster}
+                                            disabled={uploadingPoster}
+                                            className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                        >
+                                            <Trash2 size={15} />
+                                            <span>Hapus Poster</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>
