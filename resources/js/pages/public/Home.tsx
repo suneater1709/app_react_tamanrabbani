@@ -244,7 +244,7 @@ export default function Home() {
 
                             <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-2">
                                 <Link
-                                    to="/ppdb"
+                                    to="/ppdb?form=true"
                                     className="w-full sm:w-auto px-7 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl sm:rounded-full transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer transform hover:-translate-y-0.5"
                                 >
                                     <span>Daftar Sekarang</span>

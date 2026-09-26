@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, User, Users, Upload, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, Calendar, Sparkles, FileText, HelpCircle, FilePlus, ArrowRight, Wallet, Receipt, Copy, Check } from 'lucide-react';
 import { cmsApi } from '../../services/api';
 import axios from 'axios';
@@ -72,6 +72,7 @@ const step4Schema = z.object({
 });
 
 export default function Admission() {
+    const location = useLocation();
     const [showForm, setShowForm] = useState(false);
     const [step, setStep] = useState(1);
     const [programs, setPrograms] = useState<{ id: number; name: string; code: string }[]>([]);
@@ -102,6 +103,22 @@ export default function Admission() {
             })
             .catch((err) => console.error(err));
     }, []);
+
+    // Direct routing: when user navigates with ?form=true or ?step=...
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const formParam = searchParams.get('form');
+        const stepParam = searchParams.get('step');
+        
+        if (formParam === 'true' || formParam === '1' || stepParam) {
+            const targetStep = stepParam ? Math.min(5, Math.max(1, parseInt(stepParam, 10) || 1)) : 1;
+            setShowForm(true);
+            setStep(targetStep);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (!formParam && !stepParam && !window.history.state?.showForm) {
+            setShowForm(false);
+        }
+    }, [location.search]);
 
     // Resolvers based on current step
     const getResolver = () => {
@@ -184,7 +201,7 @@ export default function Admission() {
     }, []);
 
     const startRegistration = () => {
-        window.history.pushState({ showForm: true, step: 1 }, '', '?step=1');
+        window.history.pushState({ showForm: true, step: 1 }, '', '?form=true&step=1');
         setShowForm(true);
         setStep(1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -196,7 +213,7 @@ export default function Admission() {
 
         if (step < 5) {
             const nextStep = step + 1;
-            window.history.pushState({ showForm: true, step: nextStep }, '', `?step=${nextStep}`);
+            window.history.pushState({ showForm: true, step: nextStep }, '', `?form=true&step=${nextStep}`);
             setStep(nextStep);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -225,6 +242,8 @@ export default function Admission() {
 
     const [feeCalculation, setFeeCalculation] = useState<{
         entry_fee: number;
+        infaq_amount?: number;
+        cashback_percent?: number;
         form_fee: number;
         discount_amount: number;
         total_transfer_amount: number;
@@ -272,22 +291,51 @@ export default function Admission() {
         const entryFee = isKb 
             ? (settings?.ppdb_fee_structure?.kb?.total || 2800000) 
             : (settings?.ppdb_fee_structure?.tk?.total || 3950000);
-        const formFee = 100000;
-
-        // Active wave
-        const activeWave = (settings?.ppdb_waves || []).find((w: any) => w.is_active);
-        let discount = 400000;
-        if (activeWave) {
-            if (activeWave.discount_amount !== undefined) {
-                discount = Number(activeWave.discount_amount);
-            } else if (activeWave.name?.toLowerCase().includes('3')) {
-                discount = 0;
+        
+        let infaqAmount = isKb ? 550000 : 750000;
+        const levelKey = isKb ? 'kb' : 'tk';
+        const feeItems = settings?.ppdb_fee_structure?.[levelKey]?.items;
+        if (Array.isArray(feeItems)) {
+            const infaqItem = feeItems.find((it: any) => it.name?.toLowerCase().includes('infaq'));
+            if (infaqItem && infaqItem.amount) {
+                infaqAmount = Number(infaqItem.amount);
             }
         }
 
-        const total = Math.max(0, entryFee + formFee - discount);
+        const formFee = 0;
+
+        // Active wave & cashback percentage
+        const activeWave = (settings?.ppdb_waves || []).find((w: any) => w.is_active) || (settings?.ppdb_waves?.[0]);
+        let cashbackPercent = 50;
+        if (activeWave) {
+            if (activeWave.cashback_percent !== undefined && !isNaN(Number(activeWave.cashback_percent))) {
+                cashbackPercent = Number(activeWave.cashback_percent);
+            } else if (activeWave.cashback_percentage !== undefined && !isNaN(Number(activeWave.cashback_percentage))) {
+                cashbackPercent = Number(activeWave.cashback_percentage);
+            } else if (activeWave.discount !== undefined && Number(activeWave.discount) <= 100) {
+                cashbackPercent = Number(activeWave.discount);
+            } else {
+                const nameLow = (activeWave.name || '').toLowerCase();
+                const badgeLow = (activeWave.badge || '').toLowerCase();
+                const noteLow = (activeWave.note || '').toLowerCase();
+
+                if (badgeLow.includes('50') || noteLow.includes('50') || nameLow.includes('1') || nameLow.includes('early bird')) {
+                    cashbackPercent = 50;
+                } else if (badgeLow.includes('40') || noteLow.includes('40') || nameLow.includes('2') || nameLow.includes('reguler')) {
+                    cashbackPercent = 40;
+                } else if (badgeLow.includes('30') || noteLow.includes('30') || nameLow.includes('3')) {
+                    cashbackPercent = 30;
+                }
+            }
+        }
+
+        const discount = Math.round((cashbackPercent / 100) * infaqAmount);
+        const total = Math.max(0, entryFee - discount);
+
         return {
             entry_fee: entryFee,
+            infaq_amount: infaqAmount,
+            cashback_percent: cashbackPercent,
             form_fee: formFee,
             discount_amount: discount,
             total_transfer_amount: total,
@@ -484,24 +532,24 @@ export default function Admission() {
                             <div className="space-y-4">
                                 {(settings?.ppdb_waves && settings.ppdb_waves.length > 0 ? settings.ppdb_waves : [
                                     {
-                                        name: 'Gelombang 1 (Early Bird)',
-                                        period: 'Juli s.d September 2026',
-                                        badge: 'Diskon Rp 400.000',
-                                        note: '* Potongan Uang Pangkal Sebesar Rp 400.000!',
+                                        name: 'Gelombang 1',
+                                        period: 'Oktober s.d November 2026',
+                                        badge: 'Cashback 50%',
+                                        note: '* Cashback 50% dari Infaq Pendidikan',
                                         is_active: true,
                                     },
                                     {
-                                        name: 'Gelombang 2 (Reguler)',
-                                        period: 'Oktober s.d Desember 2026',
-                                        badge: '',
-                                        note: '',
+                                        name: 'Gelombang 2',
+                                        period: 'Desember s.d Januari 2027',
+                                        badge: 'Cashback 40%',
+                                        note: '* Cashback 40% dari Infaq Pendidikan',
                                         is_active: false,
                                     },
                                     {
-                                        name: 'Gelombang 3 (Sisa Kuota)',
-                                        period: 'Januari s.d Juni 2027',
-                                        badge: '',
-                                        note: '* Dibuka apabila kuota kelas masih tersedia.',
+                                        name: 'Gelombang 3',
+                                        period: 'Februari s.d April 2027',
+                                        badge: 'Cashback 30%',
+                                        note: '* Cashback 30% dari Infaq Pendidikan',
                                         is_active: false,
                                     }
                                 ]).map((wave: any, idx: number) => (
@@ -630,7 +678,7 @@ export default function Admission() {
                                         </div>
 
                                         <div className="mt-6 pt-4 border-t border-slate-100 text-xxs text-slate-500">
-                                            * Dapatkan potongan diskon uang pangkal early bird s.d Rp 400.000 pada gelombang yang berlaku.
+                                            * Dapatkan cashback hingga 50% dari uang infaq pendidikan sesuai gelombang pendaftaran yang berlaku.
                                         </div>
                                     </div>
                                 );
@@ -687,7 +735,7 @@ export default function Admission() {
                                         </div>
 
                                         <div className="mt-6 pt-4 border-t border-slate-100 text-xxs text-slate-500">
-                                            * Dapatkan potongan diskon uang pangkal early bird s.d Rp 400.000 pada gelombang yang berlaku.
+                                            * Dapatkan cashback hingga 50% dari uang infaq pendidikan sesuai gelombang pendaftaran yang berlaku.
                                         </div>
                                     </div>
                                 );
@@ -1222,24 +1270,31 @@ export default function Admission() {
                                                 )}
                                             </div>
 
-                                            {/* 3 Calculation Lines */}
+                                            {/* Calculation Lines */}
                                             <div className="space-y-2.5 bg-white p-4 sm:p-5 rounded-2xl text-xs border border-sky-100 shadow-2xs">
                                                 <div className="flex justify-between items-center text-slate-600">
                                                     <span className="font-medium">+ Biaya Masuk {calc.program_name}</span>
                                                     <span className="font-bold text-slate-800">{formatRp(calc.entry_fee)}</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-slate-600">
-                                                    <span className="font-medium">+ Biaya Form Pendaftaran</span>
-                                                    <span className="font-bold text-slate-800">{formatRp(calc.form_fee)}</span>
-                                                </div>
+                                                {calc.form_fee > 0 && (
+                                                    <div className="flex justify-between items-center text-slate-600">
+                                                        <span className="font-medium">+ Biaya Form Pendaftaran</span>
+                                                        <span className="font-bold text-slate-800">{formatRp(calc.form_fee)}</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between items-center text-emerald-700">
-                                                    <span className="font-medium">− Diskon Potongan Uang Pangkal ({calc.wave_name})</span>
+                                                    <span className="font-medium">− Cashback {calc.cashback_percent || 50}% Infaq Pendidikan ({calc.wave_name})</span>
                                                     <span className="font-bold">− {formatRp(calc.discount_amount)}</span>
                                                 </div>
                                                 <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-sky-50/50 -mx-4 -mb-4 sm:-mx-5 sm:-mb-5 p-4 sm:p-5 rounded-b-2xl">
-                                                    <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-800">
-                                                        TOTAL YANG HARUS DITRANSFER:
-                                                    </span>
+                                                    <div>
+                                                        <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-800 block">
+                                                            TOTAL YANG HARUS DITRANSFER:
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-400 font-medium">
+                                                            {formatRp(calc.entry_fee)} − {formatRp(calc.discount_amount)} ({calc.cashback_percent || 50}% × {formatRp(calc.infaq_amount || (calc.program_name?.includes('KB') ? 550000 : 750000))})
+                                                        </span>
+                                                    </div>
                                                     <span className="text-xl sm:text-2xl font-black text-teal-800 font-mono tracking-tight">
                                                         {formatRp(calc.total_transfer_amount)}
                                                     </span>

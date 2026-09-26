@@ -22,6 +22,8 @@ interface WaveItem {
     period: string;
     badge?: string;
     note?: string;
+    discount?: number;
+    cashback_percent?: number;
     is_active?: boolean;
 }
 
@@ -38,25 +40,23 @@ interface LevelFeeStructure {
 
 const DEFAULT_FEE_STRUCTURE: { kb: LevelFeeStructure; tk: LevelFeeStructure } = {
     kb: {
-        title: 'Kelompok Bermain (Playgroup)',
+        title: 'Kelompok Bermain (KB)',
         total: 2800000,
         items: [
-            { name: 'Infaq Pengembangan Gedung & Sarpras', amount: 1200000 },
-            { name: 'Seragam Sekolah & Atribut (4 Stel)', amount: 650000 },
-            { name: 'Buku Paket Sentra & Bahan Ajar 1 Tahun', amount: 400000 },
-            { name: 'SPP Bulan Pertama (Juli)', amount: 450000 },
-            { name: 'Kegiatan Outing & Parenting 1 Semester', amount: 100000 },
+            { name: 'Infaq Pendidikan', amount: 550000 },
+            { name: 'Perlengkapan (1 tahun)', amount: 850000 },
+            { name: 'Kegiatan (1 tahun)', amount: 1000000 },
+            { name: 'Seragam', amount: 400000 },
         ]
     },
     tk: {
         title: 'Taman Kanak-Kanak (TK A & TK B)',
         total: 3950000,
         items: [
-            { name: 'Infaq Pengembangan Gedung & Sarpras', amount: 1900000 },
-            { name: 'Seragam Sekolah & Atribut (5 Stel)', amount: 800000 },
-            { name: 'Buku Paket, Modul Yanbu\'a & APE', amount: 500000 },
-            { name: 'SPP Bulan Pertama (Juli)', amount: 600000 },
-            { name: 'Kegiatan Outing, Manasik & PHBI/PHBN', amount: 150000 },
+            { name: 'Infaq Pendidikan', amount: 750000 },
+            { name: 'Perlengkapan (1 tahun)', amount: 1050000 },
+            { name: 'Kegiatan (1 tahun)', amount: 1500000 },
+            { name: 'Seragam', amount: 650000 },
         ]
     }
 };
@@ -76,26 +76,32 @@ export default function Settings() {
     const [ppdbWaves, setPpdbWaves] = useState<WaveItem[]>([
         {
             id: '1',
-            name: 'Gelombang 1 (Early Bird)',
-            period: 'Juli s.d September 2026',
-            badge: 'Diskon Rp 400.000',
-            note: '* Potongan Uang Pangkal Sebesar Rp 400.000!',
+            name: 'Gelombang 1',
+            period: 'Oktober s.d November 2026',
+            badge: 'Cashback 50%',
+            note: '* Cashback 50% dari Infaq Pendidikan',
+            discount: 50,
+            cashback_percent: 50,
             is_active: true,
         },
         {
             id: '2',
-            name: 'Gelombang 2 (Reguler)',
-            period: 'Oktober s.d Desember 2026',
-            badge: '',
-            note: '',
+            name: 'Gelombang 2',
+            period: 'Desember s.d Januari 2027',
+            badge: 'Cashback 40%',
+            note: '* Cashback 40% dari Infaq Pendidikan',
+            discount: 40,
+            cashback_percent: 40,
             is_active: false,
         },
         {
             id: '3',
-            name: 'Gelombang 3 (Sisa Kuota)',
-            period: 'Januari s.d Juni 2027',
-            badge: '',
-            note: '* Dibuka apabila kuota kelas masih tersedia.',
+            name: 'Gelombang 3',
+            period: 'Februari s.d April 2027',
+            badge: 'Cashback 30%',
+            note: '* Cashback 30% dari Infaq Pendidikan',
+            discount: 30,
+            cashback_percent: 30,
             is_active: false,
         }
     ]);

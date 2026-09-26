@@ -308,11 +308,15 @@ export default function Revision() {
                      progId === '1' || progId === 1 || progId === 'pg';
         
         const entryFee = isKb ? 2800000 : 3950000;
-        const formFee = 100000;
-        const discount = 400000;
-        const total = Math.max(0, entryFee + formFee - discount);
+        const infaqAmount = isKb ? 550000 : 750000;
+        const formFee = 0;
+        const cashbackPercent = 50;
+        const discount = Math.round((cashbackPercent / 100) * infaqAmount);
+        const total = Math.max(0, entryFee - discount);
         return {
             entry_fee: entryFee,
+            infaq_amount: infaqAmount,
+            cashback_percent: cashbackPercent,
             form_fee: formFee,
             discount_amount: discount,
             total_transfer_amount: total,
@@ -959,24 +963,31 @@ export default function Revision() {
                                                 )}
                                             </div>
 
-                                            {/* 3 Calculation Lines */}
+                                            {/* Calculation Lines */}
                                             <div className="space-y-2.5 bg-white p-4 sm:p-5 rounded-2xl text-xs border border-sky-100 shadow-2xs">
                                                 <div className="flex justify-between items-center text-slate-600">
                                                     <span className="font-medium">+ Biaya Masuk {calc.program_name}</span>
                                                     <span className="font-bold text-slate-800">{formatRp(calc.entry_fee)}</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-slate-600">
-                                                    <span className="font-medium">+ Biaya Form Pendaftaran</span>
-                                                    <span className="font-bold text-slate-800">{formatRp(calc.form_fee)}</span>
-                                                </div>
+                                                {calc.form_fee > 0 && (
+                                                    <div className="flex justify-between items-center text-slate-600">
+                                                        <span className="font-medium">+ Biaya Form Pendaftaran</span>
+                                                        <span className="font-bold text-slate-800">{formatRp(calc.form_fee)}</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between items-center text-emerald-700">
-                                                    <span className="font-medium">− Diskon Potongan Uang Pangkal ({calc.wave_name})</span>
+                                                    <span className="font-medium">− Cashback {calc.cashback_percent || 50}% Infaq Pendidikan ({calc.wave_name})</span>
                                                     <span className="font-bold">− {formatRp(calc.discount_amount)}</span>
                                                 </div>
                                                 <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-sky-50/50 -mx-4 -mb-4 sm:-mx-5 sm:-mb-5 p-4 sm:p-5 rounded-b-2xl">
-                                                    <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-800">
-                                                        TOTAL YANG HARUS DITRANSFER:
-                                                    </span>
+                                                    <div>
+                                                        <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-slate-800 block">
+                                                            TOTAL YANG HARUS DITRANSFER:
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-400 font-medium">
+                                                            {formatRp(calc.entry_fee)} − {formatRp(calc.discount_amount)} ({calc.cashback_percent || 50}% × {formatRp(calc.infaq_amount || (calc.program_name?.includes('KB') ? 550000 : 750000))})
+                                                        </span>
+                                                    </div>
                                                     <span className="text-xl sm:text-2xl font-black text-teal-800 font-mono tracking-tight">
                                                         {formatRp(calc.total_transfer_amount)}
                                                     </span>

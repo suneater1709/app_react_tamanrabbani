@@ -46,33 +46,32 @@ class AdmissionService
         $fees = $feeSetting ? json_decode($feeSetting, true) : null;
 
         $entryFee = $isKb ? 2800000 : 3950000;
+        $infaqAmount = $isKb ? 550000 : 750000;
+
         if ($fees && is_array($fees)) {
-            if ($isKb && isset($fees['kb'])) {
-                if (isset($fees['kb']['total'])) {
-                    $entryFee = (float) $fees['kb']['total'];
-                } elseif (isset($fees['kb']['items']) && is_array($fees['kb']['items'])) {
-                    $entryFee = array_sum(array_column($fees['kb']['items'], 'amount'));
+            $levelKey = $isKb ? 'kb' : 'tk';
+            if (isset($fees[$levelKey])) {
+                if (isset($fees[$levelKey]['total'])) {
+                    $entryFee = (float) $fees[$levelKey]['total'];
+                } elseif (isset($fees[$levelKey]['items']) && is_array($fees[$levelKey]['items'])) {
+                    $entryFee = array_sum(array_column($fees[$levelKey]['items'], 'amount'));
                 }
-            } elseif (! $isKb && isset($fees['tk'])) {
-                if (isset($fees['tk']['total'])) {
-                    $entryFee = (float) $fees['tk']['total'];
-                } elseif (isset($fees['tk']['items']) && is_array($fees['tk']['items'])) {
-                    $entryFee = array_sum(array_column($fees['tk']['items'], 'amount'));
+
+                if (isset($fees[$levelKey]['items']) && is_array($fees[$levelKey]['items'])) {
+                    foreach ($fees[$levelKey]['items'] as $item) {
+                        if (isset($item['name']) && stripos($item['name'], 'infaq') !== false) {
+                            $infaqAmount = (float) $item['amount'];
+                            break;
+                        }
+                    }
                 }
             }
         }
 
-        // 2. Get Form Fee from Setting
-        $formFeeSetting = Setting::where('key', 'ppdb_form_fee')->value('value');
-        $formFee = 100000;
-        if ($formFeeSetting) {
-            $cleanNumeric = (int) preg_replace('/\D/', '', $formFeeSetting);
-            if ($cleanNumeric > 0) {
-                $formFee = (float) $cleanNumeric;
-            }
-        }
+        // 2. Form Fee (0 if not added to total transfer)
+        $formFee = 0;
 
-        // 3. Get Active Wave & Discount from Setting
+        // 3. Get Active Wave & Cashback Percentage from Setting
         $waveSetting = Setting::where('key', 'ppdb_waves')->value('value');
         $waves = $waveSetting ? json_decode($waveSetting, true) : null;
 
@@ -89,28 +88,36 @@ class AdmissionService
             }
         }
 
-        $activeWaveName = $activeWave['name'] ?? 'Gelombang 1 (Early Bird)';
-        $discountAmount = 0;
+        $activeWaveName = $activeWave['name'] ?? 'Gelombang 1';
+        $cashbackPercent = 50;
 
         if ($activeWave) {
-            if (isset($activeWave['discount']) && is_numeric($activeWave['discount'])) {
-                $discountAmount = (float) $activeWave['discount'];
+            if (isset($activeWave['cashback_percent']) && is_numeric($activeWave['cashback_percent'])) {
+                $cashbackPercent = (float) $activeWave['cashback_percent'];
+            } elseif (isset($activeWave['cashback_percentage']) && is_numeric($activeWave['cashback_percentage'])) {
+                $cashbackPercent = (float) $activeWave['cashback_percentage'];
+            } elseif (isset($activeWave['discount']) && is_numeric($activeWave['discount']) && (float) $activeWave['discount'] <= 100) {
+                $cashbackPercent = (float) $activeWave['discount'];
             } else {
                 $waveNameLower = strtolower($activeWave['name'] ?? '');
                 $badgeText = strtolower($activeWave['badge'] ?? '');
                 $noteText = strtolower($activeWave['note'] ?? '');
 
-                if (str_contains($badgeText, '400') || str_contains($noteText, '400') || str_contains($waveNameLower, 'gelombang 1') || str_contains($waveNameLower, 'gelombang 2') || str_contains($waveNameLower, 'early bird') || str_contains($waveNameLower, 'reguler')) {
-                    $discountAmount = 400000;
+                if (str_contains($badgeText, '50') || str_contains($noteText, '50') || str_contains($waveNameLower, 'gelombang 1') || str_contains($waveNameLower, 'gel 1') || str_contains($waveNameLower, 'gel i') || str_contains($waveNameLower, 'early bird')) {
+                    $cashbackPercent = 50;
+                } elseif (str_contains($badgeText, '40') || str_contains($noteText, '40') || str_contains($waveNameLower, 'gelombang 2') || str_contains($waveNameLower, 'gel 2') || str_contains($waveNameLower, 'gel ii') || str_contains($waveNameLower, 'reguler')) {
+                    $cashbackPercent = 40;
+                } elseif (str_contains($badgeText, '30') || str_contains($noteText, '30') || str_contains($waveNameLower, 'gelombang 3') || str_contains($waveNameLower, 'gel 3') || str_contains($waveNameLower, 'gel iii')) {
+                    $cashbackPercent = 30;
                 }
             }
-        } else {
-            $discountAmount = 400000;
         }
 
-        $totalTransfer = max(0, $entryFee + $formFee - $discountAmount);
+        $discountAmount = round(($cashbackPercent / 100) * $infaqAmount);
+        $totalTransfer = max(0, $entryFee - $discountAmount);
 
-        $entryFeeLabel = $isKb ? 'Biaya Masuk Kelompok Bermain' : ($programName ? 'Biaya Masuk '.$programName : 'Biaya Masuk Taman Kanak-Kanak (TK A & TK B)');
+        $entryFeeLabel = $isKb ? 'Biaya Masuk Kelompok Bermain (KB)' : ($programName ? 'Biaya Masuk '.$programName : 'Biaya Masuk Taman Kanak-Kanak (TK A & TK B)');
+        $discountLabel = 'Cashback Infaq Pendidikan ('.$activeWaveName.' - '.$cashbackPercent.'%)';
 
         $breakdown = [
             'program_name' => $programName,
@@ -118,9 +125,11 @@ class AdmissionService
             'is_kb' => $isKb,
             'entry_fee_label' => $entryFeeLabel,
             'entry_fee' => $entryFee,
+            'infaq_amount' => $infaqAmount,
+            'cashback_percent' => $cashbackPercent,
             'form_fee_label' => 'Biaya Form Pendaftaran',
             'form_fee' => $formFee,
-            'discount_label' => 'Diskon Potongan Uang Pangkal',
+            'discount_label' => $discountLabel,
             'discount_amount' => $discountAmount,
             'total_transfer_amount' => $totalTransfer,
             'wave_name' => $activeWaveName,
@@ -131,6 +140,8 @@ class AdmissionService
 
         return [
             'entry_fee' => $entryFee,
+            'infaq_amount' => $infaqAmount,
+            'cashback_percent' => $cashbackPercent,
             'form_fee' => $formFee,
             'discount_amount' => $discountAmount,
             'total_transfer_amount' => $totalTransfer,

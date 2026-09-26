@@ -111,7 +111,7 @@ export default function PublicLayout() {
                         <div className="flex items-center gap-2">
                             {/* CTA Button (Visible on Tablet & Desktop, hidden on small mobile to keep header clean) */}
                             <Link
-                                to="/ppdb"
+                                to="/ppdb?form=true"
                                 className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition shadow-xs whitespace-nowrap cursor-pointer hover:shadow-md"
                             >
                                 <span>Daftar Sekarang</span>
@@ -171,7 +171,7 @@ export default function PublicLayout() {
                                 {/* Primary PPDB Action in Mobile Menu */}
                                 <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
                                     <Link
-                                        to="/ppdb"
+                                        to="/ppdb?form=true"
                                         onClick={() => setMobileMenuOpen(false)}
                                         className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white text-center font-bold text-xs sm:text-sm rounded-2xl shadow-md shadow-teal-600/20 flex items-center justify-center gap-2 transition cursor-pointer"
                                     >

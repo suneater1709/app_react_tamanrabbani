@@ -79,6 +79,39 @@ class TenantDatabaseSeeder extends Seeder
             ],
         ];
 
+        $defaultWaves = [
+            [
+                'id' => '1',
+                'name' => 'Gelombang 1',
+                'period' => 'Oktober s.d November 2026',
+                'badge' => 'Cashback 50%',
+                'note' => '* Cashback 50% dari Infaq Pendidikan',
+                'discount' => 50,
+                'cashback_percent' => 50,
+                'is_active' => true,
+            ],
+            [
+                'id' => '2',
+                'name' => 'Gelombang 2',
+                'period' => 'Desember s.d Januari 2027',
+                'badge' => 'Cashback 40%',
+                'note' => '* Cashback 40% dari Infaq Pendidikan',
+                'discount' => 40,
+                'cashback_percent' => 40,
+                'is_active' => false,
+            ],
+            [
+                'id' => '3',
+                'name' => 'Gelombang 3',
+                'period' => 'Februari s.d April 2027',
+                'badge' => 'Cashback 30%',
+                'note' => '* Cashback 30% dari Infaq Pendidikan',
+                'discount' => 30,
+                'cashback_percent' => 30,
+                'is_active' => false,
+            ],
+        ];
+
         $settings = [
             'school_name' => 'KB-TK IT Taman Robbani Sidoarjo',
             'school_address' => 'Jl. Mangkurejo 41, Kwangsan, Sedati, Sidoarjo',
@@ -91,6 +124,7 @@ class TenantDatabaseSeeder extends Seeder
             'ppdb_form_fee' => 'Rp 100.000',
             'bank_account_info' => 'Bank Syariah Indonesia (BSI) - 7122107207 a.n. Rumi Salam Muhaimin',
             'ppdb_fee_structure' => json_encode($defaultFees),
+            'ppdb_waves' => json_encode($defaultWaves),
         ];
 
         foreach ($settings as $key => $val) {
