@@ -90,6 +90,43 @@ export default function Revision() {
     const [submitting, setSubmitting] = useState(false);
     const [successReceipt, setSuccessReceipt] = useState<any | null>(null);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const [pendingProgramChange, setPendingProgramChange] = useState<{ id: string; name: string } | null>(null);
+
+    // Static program options definition matching PPDB spec
+    const programOptions = [
+        {
+            id: '1',
+            name: 'Kelompok Bermain',
+            age: 'Usia 3 - 4 Tahun',
+            desc: 'Optimalkan masa keemasan ananda dengan stimulasi sensorik, kemandirian, dan adab harian.',
+            label: 'KB (Playgroup)',
+            color: 'border-pink-500 ring-2 ring-pink-500/25'
+        },
+        {
+            id: '2',
+            name: 'TK A',
+            age: 'Usia 4 - 5 Tahun',
+            desc: 'Membiasakan shalat harian, wudhu, literasi, hafalan Al-Qur\'an menyenangkan, dan sains cilik.',
+            label: 'Taman Kanak-Kanak A',
+            color: 'border-pink-500 ring-2 ring-pink-500/25'
+        },
+        {
+            id: '3',
+            name: 'TK B',
+            age: 'Usia 5 - 6 Tahun',
+            desc: 'Kesiapan matang menuju jenjang SD (calistung ramah anak, Bahasa Arab/Inggris cilik, Tahfidz mandiri).',
+            label: 'Taman Kanak-Kanak B',
+            color: 'border-pink-500 ring-2 ring-pink-500/25'
+        }
+    ];
+
+    const getProgramName = (id: string | number | undefined) => {
+        if (!id) return '';
+        const found = programOptions.find(p => p.id.toString() === id.toString());
+        if (found) return found.name;
+        const dbFound = programs.find(p => p.id.toString() === id.toString());
+        return dbFound ? dbFound.name : `Program #${id}`;
+    };
 
     // Fetch learning programs
     useEffect(() => {
@@ -259,6 +296,35 @@ export default function Revision() {
         } else {
             navigate('/cek-status');
         }
+    };
+
+    // Synchronize form value when entering step 3 if data already exists
+    useEffect(() => {
+        if (step === 3 && formData.program_id && !watchProgramId) {
+            setValue('program_id', formData.program_id, { shouldValidate: true });
+        }
+    }, [step, formData.program_id, watchProgramId, setValue]);
+
+    const handleProgramSelect = (prog: { id: string; name: string }) => {
+        const currentSelectedId = watchProgramId || formData.program_id;
+        if (currentSelectedId && currentSelectedId.toString() !== prog.id.toString()) {
+            setPendingProgramChange(prog);
+        } else {
+            setValue('program_id', prog.id, { shouldValidate: true, shouldDirty: true });
+            setFormData((prev: any) => ({ ...prev, program_id: prog.id }));
+        }
+    };
+
+    const handleConfirmProgramChange = () => {
+        if (pendingProgramChange) {
+            setValue('program_id', pendingProgramChange.id, { shouldValidate: true, shouldDirty: true });
+            setFormData((prev: any) => ({ ...prev, program_id: pendingProgramChange.id }));
+            setPendingProgramChange(null);
+        }
+    };
+
+    const handleCancelProgramChange = () => {
+        setPendingProgramChange(null);
     };
 
     const [feeCalculation, setFeeCalculation] = useState<{
@@ -712,39 +778,15 @@ export default function Revision() {
                                 </h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {[
-                                        {
-                                            id: '1',
-                                            name: 'Kelompok Bermain',
-                                            age: 'Usia 3 - 4 Tahun',
-                                            desc: 'Optimalkan masa keemasan ananda dengan stimulasi sensorik, kemandirian, dan adab harian.',
-                                            label: 'KB (Playgroup)',
-                                            color: 'border-teal-500 ring-2 ring-teal-500/25'
-                                        },
-                                        {
-                                            id: '2',
-                                            name: 'TK A',
-                                            age: 'Usia 4 - 5 Tahun',
-                                            desc: 'Membiasakan shalat harian, wudhu, literasi, hafalan Al-Qur\'an menyenangkan, dan sains cilik.',
-                                            label: 'Taman Kanak-Kanak A',
-                                            color: 'border-teal-500 ring-2 ring-teal-500/25'
-                                        },
-                                        {
-                                            id: '3',
-                                            name: 'TK B',
-                                            age: 'Usia 5 - 6 Tahun',
-                                            desc: 'Kesiapan matang menuju jenjang SD (calistung ramah anak, Bahasa Arab/Inggris cilik, Tahfidz mandiri).',
-                                            label: 'Taman Kanak-Kanak B',
-                                            color: 'border-pink-500 ring-2 ring-pink-500/25'
-                                        }
-                                    ].map((prog) => {
-                                        const isSelected = watchProgramId === prog.id || formData.program_id === prog.id;
+                                    {programOptions.map((prog) => {
+                                        const currentSelectedId = watchProgramId || formData.program_id;
+                                        const isSelected = currentSelectedId?.toString() === prog.id.toString();
                                         return (
                                             <div
                                                 key={prog.id}
-                                                onClick={() => setValue('program_id', prog.id, { shouldValidate: true })}
+                                                onClick={() => handleProgramSelect(prog)}
                                                 className={`bg-white p-6 rounded-3xl shadow-md cursor-pointer transition-all duration-300 flex flex-col justify-between min-h-60 relative text-left ${
-                                                    isSelected ? prog.color : 'border-none'
+                                                    isSelected ? 'border-pink-500 ring-2 ring-pink-500/25' : 'border-none'
                                                 }`}
                                             >
                                                 <div className="space-y-3">
@@ -1158,6 +1200,56 @@ export default function Revision() {
                     </form>
                 </div>
             </div>
+
+            {/* Modal Konfirmasi Ganti Program Kelas */}
+            <AnimatePresence>
+                {pendingProgramChange && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-7 text-center relative overflow-hidden"
+                        >
+                            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-4 border border-amber-100 shadow-xs">
+                                <AlertCircle className="w-7 h-7" />
+                            </div>
+                            
+                            <h3 className="text-lg font-extrabold text-slate-800 mb-2">
+                                Ganti Pilihan Program Kelas?
+                            </h3>
+                            
+                            <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mb-5">
+                                Anda sebelumnya telah memilih program <span className="font-bold text-slate-800">{getProgramName(watchProgramId || formData.program_id)}</span>. Apakah Anda yakin ingin menggantinya ke <span className="font-bold text-teal-600">{pendingProgramChange.name}</span>?
+                            </p>
+
+                            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 mb-6 text-left flex items-center gap-3">
+                                <Sparkles className="w-5 h-5 text-amber-500 shrink-0" />
+                                <p className="text-slate-500 text-[11px] leading-snug">
+                                    Biaya pendaftaran dan rincian administrasi akan otomatis disesuaikan dengan program baru yang Anda pilih.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    type="button"
+                                    onClick={handleCancelProgramChange}
+                                    className="w-full py-3 px-4 rounded-xl border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold hover:bg-slate-50 transition cursor-pointer"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmProgramChange}
+                                    className="w-full py-3 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-teal-600/20 transition cursor-pointer"
+                                >
+                                    Ya, Ganti Program
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
