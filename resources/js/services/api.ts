@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { formatFriendlyErrorMessage } from '../utils/errorMessage';
 
 const api = axios.create({
     baseURL: '/api/v1',
@@ -17,6 +18,17 @@ api.interceptors.request.use((config) => {
     }
     return config;
 });
+
+// Interceptor to sanitize any unexpected database or system errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error?.response?.data) {
+            error.response.data.message = formatFriendlyErrorMessage(error, error.response.data.message);
+        }
+        return Promise.reject(error);
+    }
+);
 
 // Public endpoints
 export const cmsApi = {

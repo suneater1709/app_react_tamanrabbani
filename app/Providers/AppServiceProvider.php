@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Database\ResilientMySqlConnector;
 use App\Models\Admin\PersonalAccessToken;
 use App\Repositories\Contracts\CmsRepositoryInterface;
 use App\Repositories\Contracts\PendaftarRepositoryInterface;
@@ -29,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
             CmsRepositoryInterface::class,
             CmsRepository::class
         );
+        $this->app->bind('db.connector.mysql', function () {
+            return new ResilientMySqlConnector;
+        });
     }
 
     /**

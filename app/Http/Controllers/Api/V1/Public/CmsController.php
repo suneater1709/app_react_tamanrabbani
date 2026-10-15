@@ -12,6 +12,7 @@ use App\Repositories\Contracts\CmsRepositoryInterface;
 use App\Services\CmsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class CmsController extends Controller
@@ -61,7 +62,9 @@ class CmsController extends Controller
      */
     public function home(): JsonResponse
     {
-        $data = $this->cmsService->getPublicLandingData();
+        $data = Cache::remember('public_home_landing_data', 1800, function () {
+            return $this->cmsService->getPublicLandingData();
+        });
 
         return response()->json([
             'success' => true,
@@ -74,7 +77,9 @@ class CmsController extends Controller
      */
     public function programs(): JsonResponse
     {
-        $programs = Program::where('is_active', true)->get();
+        $programs = Cache::remember('public_programs_list', 1800, function () {
+            return Program::where('is_active', true)->get();
+        });
 
         return response()->json([
             'success' => true,
@@ -87,22 +92,26 @@ class CmsController extends Controller
      */
     public function curriculumPrograms(): JsonResponse
     {
-        $programs = CurriculumProgram::where('is_active', true)
-            ->orderBy('order', 'asc')
-            ->orderBy('id', 'asc')
-            ->get();
+        $data = Cache::remember('public_curriculum_programs_data', 1800, function () {
+            $programs = CurriculumProgram::where('is_active', true)
+                ->orderBy('order', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
 
-        $extracurriculars = Extracurricular::where('is_active', true)
-            ->orderBy('order', 'asc')
-            ->orderBy('id', 'asc')
-            ->get();
+            $extracurriculars = Extracurricular::where('is_active', true)
+                ->orderBy('order', 'asc')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            return [
+                'programs' => $programs,
+                'extracurriculars' => $extracurriculars,
+            ];
+        });
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'programs' => $programs,
-                'extracurriculars' => $extracurriculars,
-            ],
+            'data' => $data,
         ]);
     }
 
@@ -145,7 +154,9 @@ class CmsController extends Controller
      */
     public function faqs(): JsonResponse
     {
-        $faqs = $this->cmsRepo->getFaqs(true);
+        $faqs = Cache::remember('public_faqs_list', 1800, function () {
+            return $this->cmsRepo->getFaqs(true);
+        });
 
         return response()->json([
             'success' => true,
@@ -172,107 +183,106 @@ class CmsController extends Controller
      */
     public function settings(): JsonResponse
     {
-        $settings = Setting::all()->pluck('value', 'key');
-        $logo = $settings->get('school_logo') ?: $settings->get('logo_landing');
+        $data = Cache::remember('public_site_settings_payload', 1800, function () {
+            $settings = Setting::all()->pluck('value', 'key');
+            $logo = $settings->get('school_logo') ?: $settings->get('logo_landing');
 
-        $defaultWaves = [
-            [
-                'id' => '1',
-                'name' => 'Gelombang 1',
-                'period' => 'Oktober s.d November 2026',
-                'badge' => 'Cashback 50%',
-                'note' => '* Cashback 50% dari Infaq Pendidikan',
-                'discount' => 50,
-                'cashback_percent' => 50,
-                'is_active' => true,
-            ],
-            [
-                'id' => '2',
-                'name' => 'Gelombang 2',
-                'period' => 'Desember s.d Januari 2027',
-                'badge' => 'Cashback 40%',
-                'note' => '* Cashback 40% dari Infaq Pendidikan',
-                'discount' => 40,
-                'cashback_percent' => 40,
-                'is_active' => false,
-            ],
-            [
-                'id' => '3',
-                'name' => 'Gelombang 3',
-                'period' => 'Februari s.d April 2027',
-                'badge' => 'Cashback 30%',
-                'note' => '* Cashback 30% dari Infaq Pendidikan',
-                'discount' => 30,
-                'cashback_percent' => 30,
-                'is_active' => false,
-            ],
-        ];
-
-        $defaultFees = [
-            'kb' => [
-                'name' => 'Kelompok Bermain (KB)',
-                'title' => 'Kelompok Bermain (KB)',
-                'age' => 'Usia 3 - 4 Tahun',
-                'total' => 2800000,
-                'items' => [
-                    ['name' => 'Infaq Pendidikan', 'amount' => 550000],
-                    ['name' => 'Perlengkapan (1 tahun)', 'amount' => 850000],
-                    ['name' => 'Kegiatan (1 tahun)', 'amount' => 1000000],
-                    ['name' => 'Seragam', 'amount' => 400000],
+            $defaultWaves = [
+                [
+                    'id' => '1',
+                    'name' => 'Gelombang 1',
+                    'period' => 'Oktober s.d November 2026',
+                    'badge' => 'Cashback 50%',
+                    'note' => '* Cashback 50% dari Infaq Pendidikan',
+                    'discount' => 50,
+                    'cashback_percent' => 50,
+                    'is_active' => true,
                 ],
-            ],
-            'tk' => [
-                'name' => 'Taman Kanak-Kanak (TK A & TK B)',
-                'title' => 'Taman Kanak-Kanak (TK A & TK B)',
-                'age' => 'Usia 4 - 6 Tahun',
-                'total' => 3950000,
-                'items' => [
-                    ['name' => 'Infaq Pendidikan', 'amount' => 750000],
-                    ['name' => 'Perlengkapan (1 tahun)', 'amount' => 1050000],
-                    ['name' => 'Kegiatan (1 tahun)', 'amount' => 1500000],
-                    ['name' => 'Seragam', 'amount' => 650000],
+                [
+                    'id' => '2',
+                    'name' => 'Gelombang 2',
+                    'period' => 'Desember s.d Januari 2027',
+                    'badge' => 'Cashback 40%',
+                    'note' => '* Cashback 40% dari Infaq Pendidikan',
+                    'discount' => 40,
+                    'cashback_percent' => 40,
+                    'is_active' => false,
                 ],
-            ],
-        ];
+                [
+                    'id' => '3',
+                    'name' => 'Gelombang 3',
+                    'period' => 'Februari s.d April 2027',
+                    'badge' => 'Cashback 30%',
+                    'note' => '* Cashback 30% dari Infaq Pendidikan',
+                    'discount' => 30,
+                    'cashback_percent' => 30,
+                    'is_active' => false,
+                ],
+            ];
 
-        $rawWaves = $settings->get('ppdb_waves');
-        $waves = $rawWaves ? json_decode($rawWaves, true) : $defaultWaves;
-        if (! is_array($waves)) {
-            $waves = $defaultWaves;
-        }
+            $defaultFees = [
+                'kb' => [
+                    'name' => 'Kelompok Bermain (KB)',
+                    'title' => 'Kelompok Bermain (KB)',
+                    'age' => 'Usia 3 - 4 Tahun',
+                    'total' => 2800000,
+                    'items' => [
+                        ['name' => 'Infaq Pendidikan', 'amount' => 550000],
+                        ['name' => 'Perlengkapan (1 tahun)', 'amount' => 850000],
+                        ['name' => 'Kegiatan (1 tahun)', 'amount' => 1000000],
+                        ['name' => 'Seragam', 'amount' => 400000],
+                    ],
+                ],
+                'tk' => [
+                    'name' => 'Taman Kanak-Kanak (TK A & TK B)',
+                    'title' => 'Taman Kanak-Kanak (TK A & TK B)',
+                    'age' => 'Usia 4 - 6 Tahun',
+                    'total' => 3950000,
+                    'items' => [
+                        ['name' => 'Infaq Pendidikan', 'amount' => 750000],
+                        ['name' => 'Perlengkapan (1 tahun)', 'amount' => 1050000],
+                        ['name' => 'Kegiatan (1 tahun)', 'amount' => 1500000],
+                        ['name' => 'Seragam', 'amount' => 650000],
+                    ],
+                ],
+            ];
 
-        $rawFees = $settings->get('ppdb_fee_structure');
-        $fees = $rawFees ? json_decode($rawFees, true) : $defaultFees;
-        if (! is_array($fees)) {
-            $fees = $defaultFees;
-        }
-
-        $logoUrl = null;
-        if ($logo) {
-            if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://') || str_starts_with($logo, '/')) {
-                $logoUrl = $logo;
-            } else {
-                $logoUrl = '/storage/'.ltrim($logo, '/');
+            $rawWaves = $settings->get('ppdb_waves');
+            $waves = $rawWaves ? json_decode($rawWaves, true) : $defaultWaves;
+            if (! is_array($waves)) {
+                $waves = $defaultWaves;
             }
-        }
 
-        $poster = $settings->get('ppdb_poster');
-        $posterUrl = null;
-        if ($poster) {
-            if (str_starts_with($poster, 'http://') || str_starts_with($poster, 'https://') || str_starts_with($poster, '/')) {
-                $posterUrl = $poster;
-            } else {
-                $posterUrl = '/storage/'.ltrim($poster, '/');
+            $rawFees = $settings->get('ppdb_fee_structure');
+            $fees = $rawFees ? json_decode($rawFees, true) : $defaultFees;
+            if (! is_array($fees)) {
+                $fees = $defaultFees;
             }
-        }
 
-        $phone = $settings->get('school_phone', '0816503293');
-        $waDigits = preg_replace('/^0|^62/', '', preg_replace('/\D/', '', $phone));
-        $whatsappUrl = 'https://wa.me/62'.($waDigits ?: '816503293');
+            $logoUrl = null;
+            if ($logo) {
+                if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://') || str_starts_with($logo, '/')) {
+                    $logoUrl = $logo;
+                } else {
+                    $logoUrl = '/storage/'.ltrim($logo, '/');
+                }
+            }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
+            $poster = $settings->get('ppdb_poster');
+            $posterUrl = null;
+            if ($poster) {
+                if (str_starts_with($poster, 'http://') || str_starts_with($poster, 'https://') || str_starts_with($poster, '/')) {
+                    $posterUrl = $poster;
+                } else {
+                    $posterUrl = '/storage/'.ltrim($poster, '/');
+                }
+            }
+
+            $phone = $settings->get('school_phone', '0816503293');
+            $waDigits = preg_replace('/^0|^62/', '', preg_replace('/\D/', '', $phone));
+            $whatsappUrl = 'https://wa.me/62'.($waDigits ?: '816503293');
+
+            return [
                 'school_logo' => $logoUrl,
                 'logo_landing' => $logoUrl,
                 'school_name' => $settings->get('school_name', 'KB-TK IT Taman Robbani Sidoarjo'),
@@ -288,7 +298,12 @@ class CmsController extends Controller
                 'ppdb_form_fee' => $settings->get('ppdb_form_fee', 'Rp 100.000'),
                 'ppdb_waves' => $waves,
                 'ppdb_fee_structure' => $fees,
-            ],
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
         ]);
     }
 }

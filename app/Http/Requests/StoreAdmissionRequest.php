@@ -3,7 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Models\Tenant\Pendaftar;
+use App\Models\Tenant\Program;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 
 class StoreAdmissionRequest extends FormRequest
 {
@@ -20,9 +23,19 @@ class StoreAdmissionRequest extends FormRequest
      */
     public function rules(): array
     {
+        $activeProgramIds = Cache::remember('active_program_ids', 1800, function () {
+            try {
+                return Program::pluck('id')->map(fn ($id) => (string) $id)->all();
+            } catch (\Throwable) {
+                return ['1', '2', '3'];
+            }
+        });
+
         return [
             // Step 1: Program & Contacts
-            'program_id' => 'required|exists:programs,id',
+            'program_id' => ! empty($activeProgramIds)
+                ? ['required', Rule::in($activeProgramIds)]
+                : 'required|exists:programs,id',
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:50',
             'notes' => 'nullable|string',
@@ -76,6 +89,7 @@ class StoreAdmissionRequest extends FormRequest
         return [
             'program_id.required' => 'Pilihan program pembelajaran wajib diisi.',
             'program_id.exists' => 'Program pembelajaran tidak valid.',
+            'program_id.in' => 'Program pembelajaran tidak valid.',
             'email.required' => 'Email kontak wajib diisi.',
             'email.email' => 'Format email kontak tidak valid.',
             'phone.required' => 'Nomor HP kontak wajib diisi.',

@@ -10,6 +10,7 @@ use App\Models\Tenant\StudentDocument;
 use App\Models\Tenant\StudentParent;
 use App\Models\Tenant\StudentStatusLog;
 use App\Repositories\Contracts\PendaftarRepositoryInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class AdmissionService
@@ -26,7 +27,9 @@ class AdmissionService
      */
     public function calculatePaymentSnapshot($programId): array
     {
-        $program = Program::find($programId);
+        $program = Cache::remember("program_item_{$programId}", 1800, function () use ($programId) {
+            return Program::find($programId);
+        });
         $programName = $program?->name ?? 'Program Belajar';
         $programCode = $program?->code ?? '';
 
@@ -41,8 +44,10 @@ class AdmissionService
             $isKb = true;
         }
 
-        // 1. Get Fee Structure from Setting
-        $feeSetting = Setting::where('key', 'ppdb_fee_structure')->value('value');
+        // 1. Get Fee Structure from Setting (cached)
+        $feeSetting = Cache::remember('setting_ppdb_fee_structure', 1800, function () {
+            return Setting::where('key', 'ppdb_fee_structure')->value('value');
+        });
         $fees = $feeSetting ? json_decode($feeSetting, true) : null;
 
         $entryFee = $isKb ? 2800000 : 3950000;
@@ -71,8 +76,10 @@ class AdmissionService
         // 2. Form Fee (0 if not added to total transfer)
         $formFee = 0;
 
-        // 3. Get Active Wave & Cashback Percentage from Setting
-        $waveSetting = Setting::where('key', 'ppdb_waves')->value('value');
+        // 3. Get Active Wave & Cashback Percentage from Setting (cached)
+        $waveSetting = Cache::remember('setting_ppdb_waves', 1800, function () {
+            return Setting::where('key', 'ppdb_waves')->value('value');
+        });
         $waves = $waveSetting ? json_decode($waveSetting, true) : null;
 
         $activeWave = null;

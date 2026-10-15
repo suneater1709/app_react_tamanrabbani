@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Clock, ClipboardList, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { formatFriendlyErrorMessage } from '../../utils/errorMessage';
 import axios from 'axios';
 
 const searchSchema = z.object({
@@ -27,6 +28,12 @@ interface TrackData {
     status: 'pending' | 'revision' | 'accepted' | 'rejected';
     verifier_notes: string | null;
     timeline: TimelineItem[];
+    entry_fee?: number | null;
+    form_fee?: number | null;
+    discount_amount?: number | null;
+    total_transfer_amount?: number | null;
+    wave_name?: string | null;
+    payment_breakdown?: any;
 }
 
 export default function Status() {
@@ -58,11 +65,11 @@ export default function Status() {
             }
         } catch (err: any) {
             console.error(err);
-            if (err.response?.data?.message) {
-                setErrorMsg(err.response.data.message);
-            } else {
-                setErrorMsg('Pencarian gagal. Hubungan koneksi terputus.');
-            }
+            const friendlyMsg = formatFriendlyErrorMessage(
+                err,
+                'Maaf, pencarian status pendaftaran gagal diproses. Hubungan koneksi terputus.'
+            );
+            setErrorMsg(friendlyMsg);
         } finally {
             setLoading(false);
         }

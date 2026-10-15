@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, User, Users, Upload, CheckCircle2, ChevronRight, ChevronLeft, ShieldCheck, AlertCircle, Calendar, Sparkles, FileText, HelpCircle, FilePlus, ArrowRight, Wallet, Receipt, Copy, Check } from 'lucide-react';
 import { cmsApi } from '../../services/api';
+import { formatFriendlyErrorMessage } from '../../utils/errorMessage';
 import axios from 'axios';
 
 // 1. Zod Validation Schemas for each Step with strict input defenses
@@ -27,7 +28,7 @@ const step2Schema = z.object({
     nik: z.string()
         .length(16, 'NIK harus berupa 16 digit angka.')
         .regex(/^\d{16}$/, 'NIK harus 16 digit angka (tidak boleh ada huruf).'),
-    gender: z.enum(['L', 'P'], { required_error: 'Pilih jenis kelamin.' }),
+    gender: z.enum(['L', 'P'], { message: 'Pilih jenis kelamin.' }),
     birth_place: z.string()
         .min(3, 'Tempat lahir wajib diisi.')
         .regex(/^[^0-9]+$/, 'Tempat lahir hanya boleh berisi huruf (tidak boleh angka).'),
@@ -605,11 +606,11 @@ export default function Admission() {
             }
         } catch (err: any) {
             console.error(err);
-            if (err.response?.data?.message) {
-                setSubmitError(err.response.data.message);
-            } else {
-                setSubmitError('Gagal mengirim pendaftaran. Silakan cek kembali input data Anda.');
-            }
+            const friendlyMsg = formatFriendlyErrorMessage(
+                err,
+                'Maaf, gagal mengirim pendaftaran. Silakan periksa kembali kelengkapan data Anda atau coba beberapa saat lagi.'
+            );
+            setSubmitError(friendlyMsg);
         } finally {
             setSubmitting(false);
         }
